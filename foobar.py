@@ -8,8 +8,6 @@ def main():
     def create_main_surface(size):
         return pygame.display.set_mode(size)
     def renderFrame():
-        clock = pygame.time.Clock
-        screen.fill((0, 0, 0)) 
 
         # draw circle
         pygame.draw.circle(
