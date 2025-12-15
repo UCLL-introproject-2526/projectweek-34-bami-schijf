@@ -1,19 +1,50 @@
 import pygame
 from pygame.display import flip
+
+screen_size = (1024, 768)
+
+class State:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+    
+    def up(self):
+        if self.y > 0:
+            self.y -= 25
+            if self.y < 0:
+                self.y = 0
+    def down(self):
+        if self.y < screen_size[1]:
+            self.y += 25
+            if self.y > screen_size[1]:
+                self.y = screen_size[1]
+    def left(self):
+        if self.x > 0:
+            self.x -= 25
+            if self.x < 0:
+                self.x = 0
+    def right(self):
+        if self.x < screen_size[0]:
+            self.x += 25
+            if self.x > screen_size[0]:
+                self.x = screen_size[0]
+
 def main():
     pygame.init()
+    
 
-    screen_size = (1024, 768)
+    circle = State()
 
     def create_main_surface(size):
         return pygame.display.set_mode(size)
     def renderFrame():
+        screen.fill((0, 0, 0))
 
         # draw circle
         pygame.draw.circle(
             screen,
             (0, 255, 0),          # green
-            (512, 384),           # center of screen
+            (circle.x, circle.y),           # center of screen
             50                    # radius
         )
         flip()
@@ -29,6 +60,15 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    circle.up()
+                if event.key == pygame.K_DOWN:
+                    circle.down()
+                if event.key == pygame.K_RIGHT:
+                    circle.right()
+                if event.key == pygame.K_LEFT:
+                    circle.left()
         renderFrame()
     pygame.quit()
 
