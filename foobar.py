@@ -30,6 +30,8 @@ class State:
                 self.x = screen_size[0]
 
 def main():
+    clock = pygame.time.Clock()
+
     pygame.init()
     
 
@@ -56,6 +58,7 @@ def main():
     running = True
 
     while running:
+        clock.tick(60)
         pygame.event.pump()
         heldKeys = pygame.key.get_pressed()
         for event in pygame.event.get():
@@ -71,7 +74,6 @@ def main():
             circle.right()
         if heldKeys[pygame.K_LEFT]:
             circle.left()
-
         renderFrame()
     pygame.quit()
 
