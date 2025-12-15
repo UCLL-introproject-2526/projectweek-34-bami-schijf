@@ -7,17 +7,8 @@ def main():
 
     def create_main_surface(size):
         return pygame.display.set_mode(size)
-
-    screen = create_main_surface(screen_size)
-    pygame.display.set_caption("Circle")
-
-    running = True
-
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
+    def renderFrame():
+        clock = pygame.time.Clock
         screen.fill((0, 0, 0)) 
 
         # draw circle
@@ -27,8 +18,20 @@ def main():
             (512, 384),           # center of screen
             50                    # radius
         )
-
         flip()
+        
+
+    screen = create_main_surface(screen_size)
+    pygame.display.set_caption("Circle")
+
+    running = True
+
+    while running:
+        pygame.event.pump()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        renderFrame()
     pygame.quit()
 
 
