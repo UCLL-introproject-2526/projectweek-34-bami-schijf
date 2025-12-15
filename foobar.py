@@ -1,13 +1,19 @@
 import pygame
 
+def main():
+    # Initialize Pygame
+    pygame.init()
 
-# Initialize Pygame
-pygame.init()
+    screen_size = (1024, 768)
 
-screen_size = (1024, 768)
+    def create_main_window(size):
+        while True:
+            pygame.display.set_mode(size)
 
-def create_main_window(size):
-    while True:
-        pygame.display.set_mode(size)
+    create_main_window(screen_size)
 
-create_main_window(screen_size)
+
+
+if __name__ == "__main__":
+    main()
+    
