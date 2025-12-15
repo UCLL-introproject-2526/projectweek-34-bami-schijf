@@ -73,6 +73,23 @@ class Fruit(Npc):
             (self.x, self.y, self.width, self.height)
         )
 
+
+class Boss(Npc):
+    def __init__(self):
+        super().__init__()
+        self.x = screen_size[0] // 2 - self.width
+        self.y = screen_size[1] // 8
+        self.width = 150
+        self.height = 200
+        self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.x, self.y))
+
+        
+
+
 def renderFrame(screen, player: Player, npcs: list):
     screen.fill((0, 0, 0))
     player.draw(screen)
@@ -95,6 +112,8 @@ def main():
         enemies.append(Labubu())
     for _ in range(4):
         enemies.append(Zombie())
+
+    enemies.append(Boss())
 
     while running:
         clock.tick(60)
