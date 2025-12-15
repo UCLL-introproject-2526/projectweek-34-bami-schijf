@@ -1,5 +1,5 @@
 import pygame
-
+from pygame.display import flip
 def main():
     pygame.init()
 
@@ -28,7 +28,7 @@ def main():
             50                    # radius
         )
 
-        pygame.display.flip()
+        flip()
     pygame.quit()
 
 
