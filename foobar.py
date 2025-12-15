@@ -20,7 +20,7 @@ class State:
                 self.y = screen_size[1]
     def left(self):
         if self.x > 0:
-            self.x -= 1
+            self.x -= 1 
             if self.x < 0:
                 self.x = 0
     def right(self):
@@ -43,9 +43,9 @@ def main():
         # draw circle
         pygame.draw.circle(
             screen,
-            (0, 255, 0),                    # green
+            (0, 255, 0),          # green
             (circle.x, circle.y),           # center of screen
-            50                              # radius
+            50                    # radius
         )
         flip()
         
@@ -73,7 +73,6 @@ def main():
             circle.left()
 
         renderFrame()
-    
     pygame.quit()
 
 
