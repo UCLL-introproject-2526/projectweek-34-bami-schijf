@@ -5,7 +5,7 @@ screen_size = (1024, 768)
 
 class State:
     def __init__(self):
-        self.x = 0
+        self.x = 100
         self.y = 0
     
     def up(self):
