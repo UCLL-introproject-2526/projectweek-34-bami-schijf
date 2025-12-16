@@ -11,6 +11,23 @@ screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
 
+background_image = pygame.image.load("background/background-map 1 (basic).png").convert()
+background_width, background_height = background_image.get_size()
+scroll_x, scroll_y = 0, 0
+
+PLAYER_WIDTH = 60
+PLAYER_HEIGHT = 100
+BORDER_TOP = 0
+BORDER_BOTTOM = background_height - PLAYER_HEIGHT
+BORDER_LEFT = 0
+BORDER_RIGHT = background_width - PLAYER_WIDTH
+
+MAP_TOP = 0
+MAP_LEFT = 0
+MAP_BOTTOM = background_height - screen_size[1]
+MAP_RIGHT = background_width - screen_size[0]
+
+
 class hitBox:
     def __init__(self,duration,size,player):
         self.startTime = time.time()
@@ -40,8 +57,8 @@ class Player:
         self.speed = 5
         self.x = screen_size[0] // 2
         self.y = screen_size[1] // 2
-        self.width = 60
-        self.height = 100
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
         self.direction = "right"
 
         self.sprites = {
@@ -89,16 +106,30 @@ class Player:
         self.punch_timer = 10   # aantal frames zichtbaar
 
     def up(self):
-        self.y = max(0, self.y - self.speed)
+        global scroll_y
+        if self.y > BORDER_TOP:
+            self.y -= self.speed
+
+        scroll_y = max(MAP_TOP, scroll_y - self.speed)
 
     def down(self):
-        self.y = min(screen_size[1] - self.height, self.y + self.speed)
+        global scroll_y
+        if self.y < BORDER_BOTTOM:
+            self.y += self.speed
+
+        scroll_y = min(MAP_BOTTOM, scroll_y + self.speed)
 
     def left(self):
-        self.x = max(0, self.x - self.speed)
+        global scroll_x
+        if self.x > BORDER_LEFT:
+            self.x -= self.speed
+        scroll_x = max(MAP_LEFT, scroll_x - self.speed)
 
     def right(self):
-        self.x = min(screen_size[0] - self.width, self.x + self.speed)
+        global scroll_x
+        if self.x < BORDER_RIGHT:
+            self.x += self.speed
+        scroll_x = min(MAP_RIGHT, scroll_x + self.speed)
 
     def get_rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
@@ -213,7 +244,7 @@ class Boss(Npc):
 
 
 def renderFrame(screen, player: Player, npcs: list): #PHASE THROUGH ENEMIES (LAYERS)
-    screen.fill((0, 0, 0))
+    screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     drawables = npcs + [player]
     drawables.sort(key=lambda obj: obj.y + obj.height)
     for obj in drawables:
@@ -268,7 +299,7 @@ def main():
             if player_rect.colliderect(npc.get_rect()):
                 player.x, player.y = old_x, old_y
                 break
-    
+        
         if player.punching:
             player.punch_timer -= 1
             if player.punch_timer <= 0:
