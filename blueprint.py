@@ -17,7 +17,8 @@ scroll_x, scroll_y = 0, 0
 
 class Player:
     def __init__(self):
-        self.speed = 10
+        self.base_speed = 10
+        self.speed = self.base_speed
         self.width = 60
         self.height = 100
         # Player is always at the center of the screen
@@ -128,12 +129,13 @@ class Npc:
     def __init__(self):
         self.world_x, self.world_y = randint(0, background_width), randint(0, background_height)
         self.width, self.height = 45, 60
-        self.speed = 5
+        self.base_speed = 5
+        self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
         
     def trace(self, player: Player):
-        m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
+        m = getDir(player, (self.world_x, self.world_y), (player.world_x, player.world_y))
         self.world_x += m[0] * self.speed
         self.world_y += m[1] * self.speed
 
@@ -149,11 +151,13 @@ class Npc:
         )
 
 
-def getDir(selfCoords: tuple, playerCoords: tuple):
+def getDir(obj: Player,selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
     size = (dx**2 + dy**2)**(1/2)
-    if size < 0.1:
+    if size < 1:
+        obj.speed = 0
         return (0, 0)
+    obj.speed = obj.base_speed
     return (dx/size, dy/size)
 
 
@@ -162,7 +166,7 @@ class Labubu(Npc):
         super().__init__()
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.speed = 8
+        self.base_speed = 8
 
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
@@ -200,7 +204,7 @@ class Zombie(Npc):
 class Fruit(Npc):
     def __init__(self):
         super().__init__()
-        self.speed = 7
+        self.base_speed = 7
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         pygame.draw.rect(
@@ -228,7 +232,7 @@ class Boss(Npc):
         self.world_y = background_height // 8
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.speed = 4
+        self.base_speed = 4
     def get_rect(self):
         shrink_w, shrink_h = 80, 120
         return pygame.Rect(
@@ -297,9 +301,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT:
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     player.look_right()
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_q:
                     player.look_left()
                 elif event.key == pygame.K_SPACE:
                     tutorial = False
@@ -316,7 +320,16 @@ def main():
             player.left()
         if held[pygame.K_RIGHT]:
             player.right()
-        
+
+        if held[pygame.K_z]:
+            player.up()
+        if held[pygame.K_s]:
+            player.down()
+        if held[pygame.K_q]:
+            player.left()
+        if held[pygame.K_d]:
+            player.right()
+
         # Update enemy positions to follow player
         for enemy in enemies:
             enemy.trace(player)
