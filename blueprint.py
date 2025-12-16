@@ -241,7 +241,7 @@ def main():
     enemies.append(Boss())
     
     while running:
-        clock.tick(60)
+        clock.tick(30)
         pygame.event.pump()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -268,8 +268,7 @@ def main():
         if held[pygame.K_RIGHT]:
             player.right()
         for enemy in enemies:
-            ...
-            # enemy.trace(player)
+            enemy.trace(player)
 
         player_rect = player.get_rect() #COLLISION DETECTION
         for npc in enemies:
