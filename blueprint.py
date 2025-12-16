@@ -17,6 +17,8 @@ scroll_x, scroll_y = 0, 0
 
 class Player:
     def __init__(self):
+        self.__maxHp = 10
+        self.__health = self.__maxHp
         self.base_speed = 10
         self.speed = self.base_speed
         self.width = 60
@@ -55,6 +57,17 @@ class Player:
     def draw(self, screen):
         # Always draw player at the center of the screen
         screen.blit(self.image, (self.screen_x, self.screen_y))
+
+    def get_hp(self):
+        return self.__health
+
+    def take_damage(self, dmg: int):
+        self.__health -= dmg
+    
+    def regen_hp(self, regen):
+        self.__health += regen
+        if self.__health > self.__maxHp:
+            self.__health = self.__maxHp
 
     def punch(self):
         if self.direction == "right":
@@ -275,7 +288,8 @@ def renderFrame(screen, player: Player, npcs: list, tutorial=None):
     # Always draw player last (on top) since it's always centered
     player.draw(screen)
 
-
+def end_game():
+    ...
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
@@ -283,7 +297,7 @@ def main():
 
     player = Player()
     tutorial = TutorialText()
-
+    invincible = False
     enemies = []
     for _ in range(3):
         enemies.append(Fruit())
@@ -295,6 +309,10 @@ def main():
     
     running = True
     while running:
+        if isinstance(invincible, int):
+            invincible -= 1
+            if invincible <= 0:
+                invincible = False
         clock.tick(30)
         pygame.event.pump()
         for event in pygame.event.get():
@@ -312,6 +330,10 @@ def main():
         old_world_x, old_world_y = player.world_x, player.world_y
 
         held = pygame.key.get_pressed()
+        if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
+            player.speed = player.base_speed / (2**(1/2))
+        else:
+            player.speed = player.base_speed
         if held[pygame.K_UP]:
             player.up()
         if held[pygame.K_DOWN]:
@@ -336,13 +358,15 @@ def main():
 
         # Check collisions using world positions
         player_rect = player.get_world_rect()
-        for npc in enemies:
-            if player_rect.colliderect(npc.get_rect()):
-                player.world_x, player.world_y = old_world_x, old_world_y
-                # Update scroll to match player's reverted position
-                scroll_x = max(0, min(player.world_x - screen_size[0] // 2, background_width - screen_size[0]))
-                scroll_y = max(0, min(player.world_y - screen_size[1] // 2, background_height - screen_size[1]))
-                break
+        if invincible == False:
+            for npc in enemies:
+                if player_rect.colliderect(npc.get_rect()):
+                    invincible = 120        # 2 sec iframes
+                    player.take_damage(2)
+                    print(player.get_hp())
+                    if player.get_hp() <= 0:
+                        end_game()
+                    break
         
         if player.punching:
             player.punch_timer -= 1
