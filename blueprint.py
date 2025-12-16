@@ -1,8 +1,39 @@
 import pygame
+import time
 from pygame.display import flip
 from random import randint
 
-screen_size = (1280, 780)
+screen_size = (1024, 768)
+Weapon = "Fist"
+
+pygame.init()
+screen = pygame.display.set_mode(screen_size)
+pygame.display.set_caption("Fixed Game")
+clock = pygame.time.Clock()
+
+class hitBox:
+    def __init__(self,duration,size,player):
+        self.startTime = time.time()
+        self.duration = duration
+        self.active = True
+        pygame.draw.rect(
+            screen,
+            (0, 200, 0),
+            (player.x, player.y, size[0], size[1]),
+            100
+        )
+
+
+    def update(self, dt):
+            self.time_left -= dt
+            if self.time_left <= 0:
+                self.active = False
+
+pygame.init()
+screen = pygame.display.set_mode(screen_size)
+pygame.display.set_caption("Fixed Game")
+clock = pygame.time.Clock()
+
 
 class Player:
     def __init__(self):
@@ -76,9 +107,16 @@ class Npc:
     def __init__(self):
         self.x, self.y = randint(0, screen_size[0]), randint(0, screen_size[1])
         self.width, self.height = 45, 60
-        #CREATE COLLISION BOX NPC
+        self.speed = 3
+         #CREATE COLLISION BOX NPC
         self.shrink_width = 22.5
         self.shrink_height = 45
+        
+    def trace(self, player: Player):
+        m = getDir((self.x, self.y), (player.x, player.y))
+        self.x += m[0] * self.speed
+        self.y += m[1] * self.speed
+
     def get_rect(self): #RETURN COLLISION BOX NPC
         return pygame.Rect(
             self.x + self.shrink_width // 2,
@@ -87,13 +125,19 @@ class Npc:
             self.height - self.shrink_height
         ) 
 
+    
+def getDir(selfCoords: tuple, playerCoords: tuple):
+    dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
+    size = (dx**2 + dy**2)**(1/2)
+    return (dx/size, dy/size)
 
 class Labubu(Npc):
     def __init__(self):
         super().__init__()
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
+        self.speed = 4
+ 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
@@ -108,6 +152,9 @@ class Labubu(Npc):
 
 
 class Zombie(Npc):
+    def __init__(self):
+        super().__init__()
+        self.speed = 2
     def draw(self, screen):
         pygame.draw.rect(
             screen,
@@ -149,6 +196,7 @@ class Boss(Npc):
         self.height = 200
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.speed = 1
 
     def get_rect(self): #COLLISION BOX BOSS
         shrink_w, shrink_h = 80, 120
@@ -173,10 +221,6 @@ def renderFrame(screen, player: Player, npcs: list): #PHASE THROUGH ENEMIES (LAY
     flip()
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode(screen_size)
-    pygame.display.set_caption("Fixed Game")
-    clock = pygame.time.Clock()
 
     player = Player()
     running = True
@@ -202,6 +246,8 @@ def main():
                     player.look_left()
                 elif event.key == pygame.K_SPACE:
                     player.punch()
+                    print(player)
+                    newhitbox = hitBox(0.5,(20,20),player)
 
         old_x, old_y = player.x, player.y
 
@@ -214,6 +260,8 @@ def main():
             player.left()
         if held[pygame.K_RIGHT]:
             player.right()
+        for enemy in enemies:
+            enemy.trace(player)
 
         player_rect = player.get_rect() #COLLISION DETECTION
         for npc in enemies:
