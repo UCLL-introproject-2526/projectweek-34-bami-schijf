@@ -2,7 +2,7 @@ import pygame
 from pygame.display import flip
 from random import randint
 
-screen_size = (1024, 768)
+screen_size = (1280, 780)
 
 class Player:
     def __init__(self):
@@ -28,7 +28,7 @@ class Player:
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
-    
+
     def look_left(self):
         self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
@@ -37,14 +37,24 @@ class Player:
         self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
-
+    def get_rect(self): #CREATE COLLISION BOX PLAYER
+        return pygame.Rect(self.x, self.y, self.width, self.height)
 
 
 class Npc:
     def __init__(self):
-        self.x, self.y = randint(0, screen_size[0]), randint(0,screen_size[1])
+        self.x, self.y = randint(0, screen_size[0]), randint(0, screen_size[1])
         self.width, self.height = 45, 60
-    
+        #CREATE COLLISION BOX NPC
+        self.shrink_width = 22.5
+        self.shrink_height = 45
+    def get_rect(self): #RETURN COLLISION BOX NPC
+        return pygame.Rect(
+            self.x + self.shrink_width // 2,
+            self.y + self.shrink_height // 2,
+            self.width - self.shrink_width,
+            self.height - self.shrink_height
+        ) 
 
 
 class Labubu(Npc):
@@ -56,6 +66,15 @@ class Labubu(Npc):
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
+    def get_rect(self): #COLLISION BOX LABUBU
+        shrink_w, shrink_h = 20, 40
+        return pygame.Rect(
+            self.x + shrink_w // 2,
+            self.y + shrink_h // 2,
+            self.width - shrink_w,
+            self.height - shrink_h
+        )
+
 
 class Zombie(Npc):
     def draw(self, screen):
@@ -64,6 +83,14 @@ class Zombie(Npc):
             (0, 200, 0),
             (self.x, self.y, self.width, self.height)
         )
+    def get_rect(self): #COLLISION BOX ZOMBIE
+        shrink_w, shrink_h = 5, 10
+        return pygame.Rect(
+            self.x + shrink_w // 2,
+            self.y + shrink_h // 2,
+            self.width - shrink_w,
+            self.height - shrink_h
+        )
 
 class Fruit(Npc):
     def draw(self, screen):
@@ -71,6 +98,14 @@ class Fruit(Npc):
             screen,
             (0, 0, 200),
             (self.x, self.y, self.width, self.height)
+        )
+    def get_rect(self): #COLLISION BOX FRUIT
+        shrink_w, shrink_h = 5, 10
+        return pygame.Rect(
+            self.x + shrink_w // 2,
+            self.y + shrink_h // 2,
+            self.width - shrink_w,
+            self.height - shrink_h
         )
 
 
@@ -84,18 +119,29 @@ class Boss(Npc):
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
+    def get_rect(self): #COLLISION BOX BOSS
+        shrink_w, shrink_h = 80, 100
+        return pygame.Rect(
+            self.x + shrink_w // 2,
+            self.y + shrink_h // 2,
+            self.width - shrink_w,
+            self.height - shrink_h
+        )
+
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-        
 
 
-def renderFrame(screen, player: Player, npcs: list):
+def renderFrame(screen, player: Player, npcs: list): #PHASE THROUGH ENEMIES (LAYERS)
     screen.fill((0, 0, 0))
-    player.draw(screen)
-    for npc in npcs:
-        npc.draw(screen)
+    drawables = npcs + [player]
+    drawables.sort(key=lambda obj: obj.y + obj.height)
+    for obj in drawables:
+        obj.draw(screen)
     flip()
+
+
 
 def main():
     pygame.init()
@@ -112,9 +158,8 @@ def main():
         enemies.append(Labubu())
     for _ in range(4):
         enemies.append(Zombie())
-
     enemies.append(Boss())
-
+    
     while running:
         clock.tick(60)
         pygame.event.pump()
@@ -124,10 +169,10 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
                     player.look_right()
-                    print("look right")
                 elif event.key == pygame.K_LEFT:
                     player.look_left()
-                    print("look left")
+
+        old_x, old_y = player.x, player.y
 
         held = pygame.key.get_pressed()
         if held[pygame.K_UP]:
@@ -139,9 +184,16 @@ def main():
         if held[pygame.K_RIGHT]:
             player.right()
 
+        player_rect = player.get_rect() #COLLISION DETECTION
+        for npc in enemies:
+            if player_rect.colliderect(npc.get_rect()):
+                player.x, player.y = old_x, old_y
+                break
+    
         renderFrame(screen, player, enemies)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
