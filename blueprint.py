@@ -11,23 +11,6 @@ screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
 
-class hitBox:
-    def __init__(self,duration,size,player):
-        self.startTime = time.time()
-        self.duration = duration
-        self.active = True
-        pygame.draw.rect(
-            screen,
-            (0, 200, 0),
-            (player.x, player.y, size[0], size[1]),
-            100
-        )
-
-
-    def update(self, dt):
-            self.time_left -= dt
-            if self.time_left <= 0:
-                self.active = False
 
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
@@ -70,6 +53,29 @@ class Player:
 
     def get_rect(self): #CREATE COLLISION BOX PLAYER
         return pygame.Rect(self.x, self.y, self.width, self.height)
+
+class hitBox:
+    def __init__(self,duration,size,player: Player):
+        self.startTime = time.time()
+        self.duration = duration
+        self.active = True
+        self.player = player
+        self.size = size
+        
+
+
+    def update(self, dt):
+            pygame.draw.rect(
+            screen,
+            (0, 200, 0),
+            (self.player.x, self.player.y, self.size[0], self.size[1]),
+            100
+        )
+            self.time_left -= dt
+            if self.time_left <= 0:
+                self.active = False
+                self.player.look_right()
+
 
 
 class Npc:
@@ -230,7 +236,7 @@ def main():
         if held[pygame.K_RIGHT]:
             player.right()
         for enemy in enemies:
-            enemy.trace(player)
+            # enemy.trace(player)
 
         player_rect = player.get_rect() #COLLISION DETECTION
         for npc in enemies:
