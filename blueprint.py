@@ -53,16 +53,6 @@ class Player:
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-    def look_left(self):
-        self.direction = "left"
-        if not self.punching:
-            self.image = self.sprites["left"]
-
-    def look_right(self):
-        self.direction = "right"
-        if not self.punching:
-            self.image = self.sprites["right"]
-
     def punch(self):
         if self.direction == "right":
             self.image = self.sprites["right_punch"]
@@ -126,7 +116,7 @@ class Npc:
         self.x, self.y = randint(0, screen_size[0]), randint(0, screen_size[1])
         self.width, self.height = 45, 60
         self.speed = 3
-         #CREATE COLLISION BOX NPC
+        #CREATE COLLISION BOX NPC
         self.shrink_width = 22.5
         self.shrink_height = 45
         
@@ -155,7 +145,7 @@ class Labubu(Npc):
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.speed = 4
- 
+
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
@@ -200,8 +190,6 @@ class Fruit(Npc):
 
     def get_rect(self):
         shrink_w, shrink_h = 5, 10
-    def get_rect(self): #COLLISION BOX FRUIT
-        shrink_w, shrink_h = 30, 40
         return pygame.Rect(
             self.x + shrink_w // 2,
             self.y + shrink_h // 2,
@@ -256,14 +244,13 @@ def renderFrame(screen, player: Player, npcs: list, tutorial=None):
     for obj in drawables:
         obj.draw(screen)
 
-
 def main():
     pygame.init()
     screen = pygame.display.set_mode(screen_size)
     pygame.display.set_caption("Fixed Game")
     clock = pygame.time.Clock()
     pygame.mixer.init()
-    pygame.mixer.music.load('sound/background.mp3') #background music
+    pygame.mixer.music.load('sounds/background.mp3') #background music
     pygame.mixer.music.play(-1, 0.0) #music loop
 
     player = Player()
@@ -326,7 +313,8 @@ def main():
                 player.punching = False
 
 
-        renderFrame(screen, player, enemies)
+        renderFrame(screen, player, enemies, tutorial)
+        flip()
 
     pygame.quit()
 
