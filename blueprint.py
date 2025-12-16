@@ -77,10 +77,12 @@ class Player:
         screen.blit(self.image, (self.x, self.y))
 
     def look_left(self):
+        self.direction = "left"
         self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def look_right(self):
+        self.direction = "right"
         self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
