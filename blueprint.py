@@ -83,7 +83,6 @@ class Player:
     def right(self):
         self.x = min(screen_size[0] - self.width, self.x + self.speed)
 
-<<<<<<< HEAD
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
@@ -96,9 +95,6 @@ class Player:
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def get_rect(self): #COLLISION BOX PLAYER
-=======
-    def get_rect(self):
->>>>>>> 4c681bdd3270ac3da835ae9ed9c7d43ccb364a8e
         return pygame.Rect(self.x, self.y, self.width, self.height)
 
 class hitBox:
@@ -243,7 +239,6 @@ def renderFrame(screen, player: Player, npcs: list): #PHASE THROUGH ENEMIES (LAY
     flip()
 
 def main():
-<<<<<<< HEAD
     pygame.init()
     screen = pygame.display.set_mode(screen_size)
     pygame.display.set_caption("Fixed Game")
@@ -251,8 +246,6 @@ def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sound/background.mp3') #background music
     pygame.mixer.music.play(-1, 0.0) #music loop
-=======
->>>>>>> 4c681bdd3270ac3da835ae9ed9c7d43ccb364a8e
 
     player = Player()
     running = True
