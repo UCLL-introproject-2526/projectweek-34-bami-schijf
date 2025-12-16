@@ -19,7 +19,7 @@ class Player:
     def __init__(self):
         self.__maxHp = 10
         self.__health = self.__maxHp
-        self.base_speed = 10
+        self.base_speed = 6
         self.speed = self.base_speed
         self.width = 60
         self.height = 100
@@ -70,12 +70,14 @@ class Player:
             self.__health = self.__maxHp
 
     def punch(self):
-        if self.direction == "right":
-            self.image = self.sprites["right_punch"]
-        else:
-            self.image = self.sprites["left_punch"]
-        self.punching = True
-        self.punch_timer = 10   # aantal frames zichtbaar
+        if not self.punching:
+            print("punch")
+            if self.direction == "right":
+                self.image = self.sprites["right_punch"]
+            else:
+                self.image = self.sprites["left_punch"]
+            self.punching = True
+            self.punch_timer = 30   # buffer frames
 
     def up(self):
         global scroll_y
@@ -103,11 +105,21 @@ class Player:
 
     def look_left(self):
         self.direction = "left"
-        self.image = self.sprites["left"]
 
     def look_right(self):
         self.direction = "right"
-        self.image = self.sprites["right"]
+
+    def update_image(self):
+        if self.punching:
+            if self.direction == "left":
+                self.image = self.sprites["left_punch"]
+            else:
+                self.image = self.sprites["right_punch"]
+        else:
+            if self.direction == "left":
+                self.image = self.sprites["left"]
+            else:
+                self.image = self.sprites["right"]
 
     def get_rect(self):
         return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
@@ -142,13 +154,13 @@ class Npc:
     def __init__(self):
         self.world_x, self.world_y = randint(0, background_width), randint(0, background_height)
         self.width, self.height = 45, 60
-        self.base_speed = 5
+        self.base_speed = 3
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
         
     def trace(self, player: Player):
-        m = getDir(player, (self.world_x, self.world_y), (player.world_x, player.world_y))
+        m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
         self.world_x += m[0] * self.speed
         self.world_y += m[1] * self.speed
 
@@ -164,13 +176,9 @@ class Npc:
         )
 
 
-def getDir(obj: Player,selfCoords: tuple, playerCoords: tuple):
+def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
     size = (dx**2 + dy**2)**(1/2)
-    if size < 1:
-        obj.speed = 0
-        return (0, 0)
-    obj.speed = obj.base_speed
     return (dx/size, dy/size)
 
 
@@ -179,7 +187,6 @@ class Labubu(Npc):
         super().__init__()
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.base_speed = 8
 
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
@@ -217,7 +224,6 @@ class Zombie(Npc):
 class Fruit(Npc):
     def __init__(self):
         super().__init__()
-        self.base_speed = 7
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         pygame.draw.rect(
@@ -245,7 +251,7 @@ class Boss(Npc):
         self.world_y = background_height // 8
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.base_speed = 4
+
     def get_rect(self):
         shrink_w, shrink_h = 80, 120
         return pygame.Rect(
@@ -260,11 +266,11 @@ class Boss(Npc):
         screen.blit(self.image, (screen_x, screen_y))
 
 
-class TutorialText:
-    def __init__(self):
+class Text:
+    def __init__(self, path="background/tutorial gamecontrols.png"):
         self.width = 500
         self.height = 200
-        self.image = pygame.image.load("background/tutorial gamecontrols.png").convert_alpha()
+        self.image = pygame.image.load(path).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.x = (screen_size[0] - self.width) // 2
         self.y = (screen_size[1] // 2) + 50
@@ -273,11 +279,9 @@ class TutorialText:
         screen.blit(self.image, (self.x, self.y))
 
 
-def renderFrame(screen, player: Player, npcs: list, tutorial=None):
+def renderFrame(screen, player: Player, npcs: list, text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     
-    if tutorial:
-        tutorial.draw(screen)
     
     drawables = npcs[:] # lijst kopie
     drawables.sort(key=lambda obj: obj.world_y + obj.height)
@@ -285,19 +289,27 @@ def renderFrame(screen, player: Player, npcs: list, tutorial=None):
     for obj in drawables:
         obj.draw(screen)
     
-    # Always draw player last (on top) since it's always centered
     player.draw(screen)
+    if text:
+        text.draw(screen)
 
 def end_game():
-    ...
+    return Text("background/game_over.png")
+
+
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
-    pygame.mixer.music.play(-1, 0.0)
+    pygame.mixer.music.play(-1, 0, 0)
+    dmg_sound = pygame.mixer.Sound('sounds/take_dmg.mp3')
+    game_over = pygame.mixer.Sound("sounds/game_over.mp3")
 
+    foo = True
     player = Player()
-    tutorial = TutorialText()
+    text = Text()
     invincible = False
+    stunned = False
+    game_start = False
     enemies = []
     for _ in range(3):
         enemies.append(Fruit())
@@ -313,59 +325,67 @@ def main():
             invincible -= 1
             if invincible <= 0:
                 invincible = False
-        clock.tick(30)
+        clock.tick(60)
         pygame.event.pump()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    player.look_right()
-                elif event.key == pygame.K_LEFT or event.key == pygame.K_q:
-                    player.look_left()
-                elif event.key == pygame.K_SPACE:
-                    tutorial = False
-                    player.punch()
+                if player.get_hp() > 0:
+                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                        player.look_right()
+                    if event.key == pygame.K_LEFT or event.key == pygame.K_q:
+                        player.look_left()
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
+                        if stunned == False:
+                            player.punch()
+                        text = False
+                        game_start = True
 
-        old_world_x, old_world_y = player.world_x, player.world_y
+        if not stunned and player.get_hp() > 0:
+            held = pygame.key.get_pressed()
+            if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
+                player.speed = player.base_speed / (2**(1/2))
+            else:
+                player.speed = player.base_speed
+            if held[pygame.K_UP] or held[pygame.K_z]:
+                player.up()
+            if held[pygame.K_DOWN] or held[pygame.K_s]:
+                player.down()
+            if held[pygame.K_LEFT] or held[pygame.K_q]:
+                player.left()
+            if held[pygame.K_RIGHT] or held[pygame.K_d]:
+                player.right()
 
-        held = pygame.key.get_pressed()
-        if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
-            player.speed = player.base_speed / (2**(1/2))
+            player.update_image()
+
         else:
-            player.speed = player.base_speed
-        if held[pygame.K_UP]:
-            player.up()
-        if held[pygame.K_DOWN]:
-            player.down()
-        if held[pygame.K_LEFT]:
-            player.left()
-        if held[pygame.K_RIGHT]:
-            player.right()
+            stunned -= 1
+            if stunned <= 0:
+                stunned = False
 
-        if held[pygame.K_z]:
-            player.up()
-        if held[pygame.K_s]:
-            player.down()
-        if held[pygame.K_q]:
-            player.left()
-        if held[pygame.K_d]:
-            player.right()
+        if game_start:
+            for enemy in enemies:
+                enemy.trace(player)
 
-        # Update enemy positions to follow player
-        for enemy in enemies:
-            enemy.trace(player)
-
-        # Check collisions using world positions
+        # Check collisions
         player_rect = player.get_world_rect()
         if invincible == False:
             for npc in enemies:
-                if player_rect.colliderect(npc.get_rect()):
-                    invincible = 120        # 2 sec iframes
+                if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
+                    invincible = 60        # 2 sec iframes
+                    stunned = 10
                     player.take_damage(2)
+                    dmg_sound.play()
+
                     print(player.get_hp())
-                    if player.get_hp() <= 0:
-                        end_game()
+                    if player.get_hp() <= 0 and foo:
+                        text = end_game()
+                        pygame.mixer.music.stop()
+                        game_over.play()
+                        foo = not foo
+            
+                        text.y = screen_size[1] // 3
                     break
         
         if player.punching:
@@ -377,7 +397,7 @@ def main():
                     player.image = player.sprites["left"]
                 player.punching = False
 
-        renderFrame(screen, player, enemies, tutorial)
+        renderFrame(screen, player, enemies, text)
         flip()
 
     pygame.quit()
