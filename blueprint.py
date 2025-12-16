@@ -136,8 +136,6 @@ class Npc:
         m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
         self.world_x += m[0] * self.speed
         self.world_y += m[1] * self.speed
-        self.world_x = max(0, min(self.world_x, background_width - self.width))
-        self.world_y = max(0, min(self.world_y, background_height - self.height))
 
     def get_screen_pos(self, scroll_x, scroll_y):
         return (self.world_x - scroll_x, self.world_y - scroll_y)
@@ -154,7 +152,7 @@ class Npc:
 def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
     size = (dx**2 + dy**2)**(1/2)
-    if size == 0:
+    if size < 0.1:
         return (0, 0)
     return (dx/size, dy/size)
 
