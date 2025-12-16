@@ -4,6 +4,12 @@ from random import randint
 
 screen_size = (1024, 768)
 
+pygame.init()
+screen = pygame.display.set_mode(screen_size)
+pygame.display.set_caption("Fixed Game")
+clock = pygame.time.Clock()
+
+
 class Player:
     def __init__(self):
         self.speed = 5
@@ -44,20 +50,33 @@ class Npc:
     def __init__(self):
         self.x, self.y = randint(0, screen_size[0]), randint(0,screen_size[1])
         self.width, self.height = 45, 60
-    
+        self.speed = 3
+    def trace(self, player: Player):
+        m = getDir((self.x, self.y), (player.x, player.y))
+        self.x += m[0] * self.speed
+        self.y += m[1] * self.speed
 
+    
+def getDir(selfCoords: tuple, playerCoords: tuple):
+    dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
+    size = (dx**2 + dy**2)**(1/2)
+    return (dx/size, dy/size)
 
 class Labubu(Npc):
     def __init__(self):
         super().__init__()
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
+        self.speed = 4
+ 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-
+ 
 class Zombie(Npc):
+    def __init__(self):
+        super().__init__()
+        self.speed = 2
     def draw(self, screen):
         pygame.draw.rect(
             screen,
@@ -83,6 +102,7 @@ class Boss(Npc):
         self.height = 200
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.speed = 1
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
@@ -98,10 +118,6 @@ def renderFrame(screen, player: Player, npcs: list):
     flip()
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode(screen_size)
-    pygame.display.set_caption("Fixed Game")
-    clock = pygame.time.Clock()
 
     player = Player()
     running = True
@@ -138,7 +154,8 @@ def main():
             player.left()
         if held[pygame.K_RIGHT]:
             player.right()
-
+        for enemy in enemies:
+            enemy.trace(player)
         renderFrame(screen, player, enemies)
 
     pygame.quit()
