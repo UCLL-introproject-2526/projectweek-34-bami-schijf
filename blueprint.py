@@ -21,10 +21,10 @@ clock = pygame.time.Clock()
 class Player:
     def __init__(self):
         self.speed = 5
-        self.x = screen_size[0] // 2
-        self.y = screen_size[1] // 2
         self.width = 60
         self.height = 100
+        self.x = screen_size[0] // 2 - self.width // 2
+        self.y = screen_size[1] // 2 - self.height // 2
         self.direction = "right"
 
         self.sprites = {
@@ -295,8 +295,8 @@ def main():
             player.left()
         if held[pygame.K_RIGHT]:
             player.right()
-        for enemy in enemies:
-            enemy.trace(player)
+        # for enemy in enemies:
+        #     enemy.trace(player)
 
         player_rect = player.get_rect()
         for npc in enemies:
