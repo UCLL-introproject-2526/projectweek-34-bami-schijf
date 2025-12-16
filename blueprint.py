@@ -1,8 +1,33 @@
 import pygame
+import time
 from pygame.display import flip
 from random import randint
 
 screen_size = (1024, 768)
+Weapon = "Fist"
+
+pygame.init()
+screen = pygame.display.set_mode(screen_size)
+pygame.display.set_caption("Fixed Game")
+clock = pygame.time.Clock()
+
+class hitBox:
+    def __init__(self,duration,size,player):
+        self.startTime = time.time()
+        self.duration = duration
+        self.active = True
+        pygame.draw.rect(
+            screen,
+            (0, 200, 0),
+            (player.x, player.y, size[0], size[1]),
+            100
+        )
+
+
+    def update(self, dt):
+            self.time_left -= dt
+            if self.time_left <= 0:
+                self.active = False
 
 class Player:
     def __init__(self):
@@ -98,9 +123,7 @@ def renderFrame(screen, player: Player, npcs: list):
     flip()
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode(screen_size)
-    pygame.display.set_caption("Fixed Game")
+
     clock = pygame.time.Clock()
 
     player = Player()
@@ -128,6 +151,9 @@ def main():
                 elif event.key == pygame.K_LEFT:
                     player.look_left()
                     print("look left")
+                elif event.key == pygame.K_SPACE:
+                    print(player)
+                    newhitbox = hitBox(0.5,(20,20),player)
 
         held = pygame.key.get_pressed()
         if held[pygame.K_UP]:
