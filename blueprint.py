@@ -4,7 +4,6 @@ from pygame.display import flip
 from random import randint
 
 screen_size = (1024, 768)
-Weapon = "Fist"
 
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
@@ -14,51 +13,19 @@ clock = pygame.time.Clock()
 background_image = pygame.image.load("background/background-map 1 (basic).png").convert()
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
-
-PLAYER_WIDTH = 60
-PLAYER_HEIGHT = 100
-BORDER_TOP = 0
-BORDER_BOTTOM = background_height - PLAYER_HEIGHT
-BORDER_LEFT = 0
-BORDER_RIGHT = background_width - PLAYER_WIDTH
-
-MAP_TOP = 0
-MAP_LEFT = 0
-MAP_BOTTOM = background_height - screen_size[1]
-MAP_RIGHT = background_width - screen_size[0]
-
-
-background_image = pygame.image.load("background/background-map 1 (basic).png").convert()
-background_width, background_height = background_image.get_size()
-scroll_x, scroll_y = 0, 0
-
-PLAYER_WIDTH = 60
-PLAYER_HEIGHT = 100
-BORDER_TOP = 0
-BORDER_BOTTOM = background_height - PLAYER_HEIGHT
-BORDER_LEFT = 0
-BORDER_RIGHT = background_width - PLAYER_WIDTH
-
-MAP_TOP = 0
-MAP_LEFT = 0
-MAP_BOTTOM = background_height - screen_size[1]
-MAP_RIGHT = background_width - screen_size[0]
-
-
-
-pygame.init()
-screen = pygame.display.set_mode(screen_size)
-pygame.display.set_caption("Fixed Game")
-clock = pygame.time.Clock()
 
 
 class Player:
     def __init__(self):
-        self.speed = 5
+        self.speed = 10
         self.width = 60
         self.height = 100
-        self.x = screen_size[0] // 2 - self.width // 2
-        self.y = screen_size[1] // 2 - self.height // 2
+        # Player is always at the center of the screen
+        self.screen_x = screen_size[0] // 2 - self.width // 2
+        self.screen_y = screen_size[1] // 2 - self.height // 2
+        # World position tracks where the player is in the game world
+        self.world_x = screen_size[0] // 2
+        self.world_y = screen_size[1] // 2
         self.direction = "right"
 
         self.sprites = {
@@ -85,7 +52,8 @@ class Player:
         self.punch_timer = 0
 
     def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+        # Always draw player at the center of the screen
+        screen.blit(self.image, (self.screen_x, self.screen_y))
 
     def punch(self):
         if self.direction == "right":
@@ -97,152 +65,158 @@ class Player:
 
     def up(self):
         global scroll_y
-        if self.y > BORDER_TOP:
-            self.y -= self.speed
-
-        scroll_y = max(MAP_TOP, scroll_y - self.speed)
+        self.world_y -= self.speed
+        self.world_y = max(0, min(self.world_y, background_height - self.height))
+        scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def down(self):
         global scroll_y
-        if self.y < BORDER_BOTTOM:
-            self.y += self.speed
-
-        scroll_y = min(MAP_BOTTOM, scroll_y + self.speed)
+        self.world_y += self.speed
+        self.world_y = max(0, min(self.world_y, background_height - self.height))
+        scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def left(self):
         global scroll_x
-        if self.x > BORDER_LEFT:
-            self.x -= self.speed
-        scroll_x = max(MAP_LEFT, scroll_x - self.speed)
+        self.world_x -= self.speed
+        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def right(self):
         global scroll_x
-        if self.x < BORDER_RIGHT:
-            self.x += self.speed
-        scroll_x = min(MAP_RIGHT, scroll_x + self.speed)
-
-    def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+        self.world_x += self.speed
+        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def look_left(self):
         self.direction = "left"
-        self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.image = self.sprites["left"]
 
     def look_right(self):
         self.direction = "right"
-        self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.image = self.sprites["right"]
 
-    def get_rect(self): #COLLISION BOX PLAYER
-        return pygame.Rect(self.x, self.y, self.width, self.height)
+    def get_rect(self):
+        return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
+    
+    def get_world_rect(self):
+        # Return collision box based on world position
+        return pygame.Rect(self.world_x, self.world_y, self.width, self.height)
+
 
 class hitBox:
-    def __init__(self,duration,size,player: Player):
+    def __init__(self, duration, size, player: Player):
         self.startTime = time.time()
         self.duration = duration
         self.active = True
         self.player = player
         self.size = size
-        
-
 
     def update(self, dt):
-            pygame.draw.rect(
+        pygame.draw.rect(
             screen,
             (0, 200, 0),
-            (self.player.x, self.player.y, self.size[0], self.size[1]),
+            (self.player.screen_x, self.player.screen_y, self.size[0], self.size[1]),
             100
         )
-            self.time_left -= dt
-            if self.time_left <= 0:
-                self.active = False
-                self.player.look_right()
-
+        self.time_left -= dt
+        if self.time_left <= 0:
+            self.active = False
+            self.player.look_right()
 
 
 class Npc:
     def __init__(self):
-        self.x, self.y = randint(0, screen_size[0]), randint(0, screen_size[1])
+        self.world_x, self.world_y = randint(0, background_width), randint(0, background_height)
         self.width, self.height = 45, 60
-        self.speed = 3
-        #CREATE COLLISION BOX NPC
+        self.speed = 5
         self.shrink_width = 22.5
         self.shrink_height = 45
         
     def trace(self, player: Player):
-        m = getDir((self.x, self.y), (player.x, player.y))
-        self.x += m[0] * self.speed
-        self.y += m[1] * self.speed
+        m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
+        self.world_x += m[0] * self.speed
+        self.world_y += m[1] * self.speed
+        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        self.world_y = max(0, min(self.world_y, background_height - self.height))
 
-    def get_rect(self): #RETURN COLLISION BOX NPC
+    def get_screen_pos(self, scroll_x, scroll_y):
+        """Convert world position to screen position"""
+        return (self.world_x - scroll_x, self.world_y - scroll_y)
+
+    def get_rect(self):
         return pygame.Rect(
-            self.x + self.shrink_width // 2,
-            self.y + self.shrink_height // 2,
+            self.world_x + self.shrink_width // 2,
+            self.world_y + self.shrink_height // 2,
             self.width - self.shrink_width,
             self.height - self.shrink_height
-        ) 
+        )
 
-    
+
 def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
     size = (dx**2 + dy**2)**(1/2)
+    if size == 0:
+        return (0, 0)
     return (dx/size, dy/size)
+
 
 class Labubu(Npc):
     def __init__(self):
         super().__init__()
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.speed = 4
+        self.speed = 8
 
     def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        screen.blit(self.image, (screen_x, screen_y))
 
     def get_rect(self):
         shrink_w, shrink_h = 30, 40
         return pygame.Rect(
-            self.x + shrink_w // 2,
-            self.y + shrink_h // 2,
+            self.world_x + shrink_w // 2,
+            self.world_y + shrink_h // 2,
             self.width - shrink_w,
             self.height - shrink_h
         )
 
 
 class Zombie(Npc):
-    def __init__(self):
-        super().__init__()
-        self.speed = 2
     def draw(self, screen):
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         pygame.draw.rect(
             screen,
             (0, 200, 0),
-            (self.x, self.y, self.width, self.height)
+            (screen_x, screen_y, self.width, self.height)
         )
 
     def get_rect(self):
         shrink_w, shrink_h = 30, 40
         return pygame.Rect(
-            self.x + shrink_w // 2,
-            self.y + shrink_h // 2,
+            self.world_x + shrink_w // 2,
+            self.world_y + shrink_h // 2,
             self.width - shrink_w,
             self.height - shrink_h
         )
 
 
 class Fruit(Npc):
+    def __init__(self):
+        super().__init__()
+        self.speed = 7
     def draw(self, screen):
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         pygame.draw.rect(
             screen,
             (0, 0, 200),
-            (self.x, self.y, self.width, self.height)
+            (screen_x, screen_y, self.width, self.height)
         )
 
     def get_rect(self):
         shrink_w, shrink_h = 5, 10
         return pygame.Rect(
-            self.x + shrink_w // 2,
-            self.y + shrink_h // 2,
+            self.world_x + shrink_w // 2,
+            self.world_y + shrink_h // 2,
             self.width - shrink_w,
             self.height - shrink_h
         )
@@ -253,23 +227,23 @@ class Boss(Npc):
         super().__init__()
         self.width = 150
         self.height = 200
-        self.x = screen_size[0] // 2 - self.width
-        self.y = screen_size[1] // 8
+        self.world_x = background_width // 2 - self.width
+        self.world_y = background_height // 8
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.speed = 1
-
+        self.speed = 4
     def get_rect(self):
         shrink_w, shrink_h = 80, 120
         return pygame.Rect(
-            self.x + shrink_w // 2,
-            self.y + shrink_h // 2,
+            self.world_x + shrink_w // 2,
+            self.world_y + shrink_h // 2,
             self.width - shrink_w,
             self.height - shrink_h
         )
     
     def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        screen.blit(self.image, (screen_x, screen_y))
 
 
 class TutorialText:
@@ -287,21 +261,24 @@ class TutorialText:
 
 def renderFrame(screen, player: Player, npcs: list, tutorial=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
+    
     if tutorial:
         tutorial.draw(screen)
-    drawables = npcs + [player]
-    drawables.sort(key=lambda obj: obj.y + obj.height)
+    
+    drawables = npcs[:] # lijst kopie
+    drawables.sort(key=lambda obj: obj.world_y + obj.height)
+    
     for obj in drawables:
         obj.draw(screen)
+    
+    # Always draw player last (on top) since it's always centered
+    player.draw(screen)
+
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode(screen_size)
-    pygame.display.set_caption("Fixed Game")
-    clock = pygame.time.Clock()
     pygame.mixer.init()
-    pygame.mixer.music.load('sounds/background.mp3') #background music
-    pygame.mixer.music.play(-1, 0.0) #music loop
+    pygame.mixer.music.load('sounds/background.mp3')
+    pygame.mixer.music.play(-1, 0.0)
 
     player = Player()
     tutorial = TutorialText()
@@ -328,11 +305,10 @@ def main():
                 elif event.key == pygame.K_LEFT:
                     player.look_left()
                 elif event.key == pygame.K_SPACE:
+                    tutorial = False
                     player.punch()
-                    print(player)
-                    newhitbox = hitBox(0.5,(20,20),player)
 
-        old_x, old_y = player.x, player.y
+        old_world_x, old_world_y = player.world_x, player.world_y
 
         held = pygame.key.get_pressed()
         if held[pygame.K_UP]:
@@ -343,13 +319,19 @@ def main():
             player.left()
         if held[pygame.K_RIGHT]:
             player.right()
-        # for enemy in enemies:
-        #     enemy.trace(player)
+        
+        # Update enemy positions to follow player
+        for enemy in enemies:
+            enemy.trace(player)
 
-        player_rect = player.get_rect()
+        # Check collisions using world positions
+        player_rect = player.get_world_rect()
         for npc in enemies:
             if player_rect.colliderect(npc.get_rect()):
-                player.x, player.y = old_x, old_y
+                player.world_x, player.world_y = old_world_x, old_world_y
+                # Update scroll to match player's reverted position
+                scroll_x = max(0, min(player.world_x - screen_size[0] // 2, background_width - screen_size[0]))
+                scroll_y = max(0, min(player.world_y - screen_size[1] // 2, background_height - screen_size[1]))
                 break
         
         if player.punching:
@@ -360,7 +342,6 @@ def main():
                 else:
                     player.image = player.sprites["left"]
                 player.punching = False
-
 
         renderFrame(screen, player, enemies, tutorial)
         flip()
