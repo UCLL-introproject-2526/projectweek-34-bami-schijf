@@ -67,7 +67,7 @@ class Labubu(Npc):
         screen.blit(self.image, (self.x, self.y))
 
     def get_rect(self): #COLLISION BOX LABUBU
-        shrink_w, shrink_h = 20, 40
+        shrink_w, shrink_h = 30, 40
         return pygame.Rect(
             self.x + shrink_w // 2,
             self.y + shrink_h // 2,
@@ -84,7 +84,7 @@ class Zombie(Npc):
             (self.x, self.y, self.width, self.height)
         )
     def get_rect(self): #COLLISION BOX ZOMBIE
-        shrink_w, shrink_h = 5, 10
+        shrink_w, shrink_h = 30, 40
         return pygame.Rect(
             self.x + shrink_w // 2,
             self.y + shrink_h // 2,
@@ -120,14 +120,14 @@ class Boss(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def get_rect(self): #COLLISION BOX BOSS
-        shrink_w, shrink_h = 80, 100
+        shrink_w, shrink_h = 80, 120
         return pygame.Rect(
             self.x + shrink_w // 2,
             self.y + shrink_h // 2,
             self.width - shrink_w,
             self.height - shrink_h
         )
-
+    
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
@@ -140,8 +140,6 @@ def renderFrame(screen, player: Player, npcs: list): #PHASE THROUGH ENEMIES (LAY
     for obj in drawables:
         obj.draw(screen)
     flip()
-
-
 
 def main():
     pygame.init()
