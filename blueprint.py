@@ -37,7 +37,7 @@ class Player:
         self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
-    def get_rect(self): #CREATE COLLISION BOX PLAYER
+    def get_rect(self): #COLLISION BOX PLAYER
         return pygame.Rect(self.x, self.y, self.width, self.height)
 
 
@@ -100,7 +100,7 @@ class Fruit(Npc):
             (self.x, self.y, self.width, self.height)
         )
     def get_rect(self): #COLLISION BOX FRUIT
-        shrink_w, shrink_h = 5, 10
+        shrink_w, shrink_h = 30, 40
         return pygame.Rect(
             self.x + shrink_w // 2,
             self.y + shrink_h // 2,
@@ -146,6 +146,9 @@ def main():
     screen = pygame.display.set_mode(screen_size)
     pygame.display.set_caption("Fixed Game")
     clock = pygame.time.Clock()
+    pygame.mixer.init()
+    pygame.mixer.music.load('sound/background.mp3') #background music
+    pygame.mixer.music.play(-1, 0.0) #music loop
 
     player = Player()
     running = True
