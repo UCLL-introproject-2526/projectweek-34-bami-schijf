@@ -140,7 +140,6 @@ class Npc:
         self.world_y = max(0, min(self.world_y, background_height - self.height))
 
     def get_screen_pos(self, scroll_x, scroll_y):
-        """Convert world position to screen position"""
         return (self.world_x - scroll_x, self.world_y - scroll_y)
 
     def get_rect(self):
