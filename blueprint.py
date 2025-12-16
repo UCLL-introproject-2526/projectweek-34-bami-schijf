@@ -11,8 +11,51 @@ class Player:
         self.y = screen_size[1] // 2
         self.width = 60
         self.height = 100
-        self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.direction = "right"
+
+        self.sprites = {
+            "left": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha(),
+                (self.width, self.height)
+            ),
+            "right": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha(),
+                (self.width, self.height)
+            ),
+            "left_punch": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - left punch.png").convert_alpha(),
+                (self.width, self.height)
+            ),
+            "right_punch": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - right punch.png").convert_alpha(),
+                (self.width, self.height)
+            ),
+        }
+
+        self.image = self.sprites["right"]
+        self.punching = False
+        self.punch_timer = 0
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.x, self.y))
+
+    def look_left(self):
+        self.direction = "left"
+        if not self.punching:
+            self.image = self.sprites["left"]
+
+    def look_right(self):
+        self.direction = "right"
+        if not self.punching:
+            self.image = self.sprites["right"]
+
+    def punch(self):
+        if self.direction == "right":
+            self.image = self.sprites["right_punch"]
+        else:
+            self.image = self.sprites["left_punch"]
+        self.punching = True
+        self.punch_timer = 10   # aantal frames zichtbaar
 
     def up(self):
         self.y = max(0, self.y - self.speed)
@@ -26,20 +69,8 @@ class Player:
     def right(self):
         self.x = min(screen_size[0] - self.width, self.x + self.speed)
 
-    def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
-
-    def look_left(self):
-        self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
-    def look_right(self):
-        self.image = pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
-    def get_rect(self): #CREATE COLLISION BOX PLAYER
+    def get_rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
-
 
 class Npc:
     def __init__(self):
@@ -169,6 +200,8 @@ def main():
                     player.look_right()
                 elif event.key == pygame.K_LEFT:
                     player.look_left()
+                elif event.key == pygame.K_SPACE:
+                    player.punch()
 
         old_x, old_y = player.x, player.y
 
@@ -188,6 +221,16 @@ def main():
                 player.x, player.y = old_x, old_y
                 break
     
+        if player.punching:
+            player.punch_timer -= 1
+            if player.punch_timer <= 0:
+                if player.direction == "right":
+                    player.image = player.sprites["right"]
+                else:
+                    player.image = player.sprites["left"]
+                player.punching = False
+
+
         renderFrame(screen, player, enemies)
 
     pygame.quit()
