@@ -481,7 +481,7 @@ def restart_button_rect():
         50
     )
 
-def startnewave(currentwave):
+def startnewave(currentwave, hearts):
     enemies = []
     fruit,labubu,zombie,boss = allenemywaves.get(currentwave)
     for _ in range(fruit):
@@ -492,6 +492,13 @@ def startnewave(currentwave):
         enemies.append(Zombie())
     for _ in range(boss):
         enemies.append(Boss())
+        # Spawn 2 hartjes bij elke wave
+    margin = 50
+    for _ in range(2):
+        x = randint(margin, background_width - margin - 32)
+        y = randint(margin, background_height - margin - 32)
+        hearts.append(Heart(x, y))
+    
     return enemies
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -593,7 +600,6 @@ def main():
     mute_img = pygame.transform.scale(mute_img, (40, 40))
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
     music_on = True
-
     foo = True
     flash_timer = 0
     flash_duration = 3
@@ -605,16 +611,10 @@ def main():
     currentwave = 1
     kills_this_wave = 0  # aantal kills in de huidige wave
     total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # totaal aantal enemies in deze wave
-    enemies = startnewave(currentwave)
-# Spawn hartjes binnen veilige grenzen van de wereld
-    hearts = []
-    num_hearts = 2
-    margin = 50  # afstand van de randen
-    for _ in range(num_hearts):
-        x = randint(margin, background_width - margin - 32)  # 32 = hart breedte
-        y = randint(margin, background_height - margin - 32) # 32 = hart hoogte
-        new_heart = Heart(x, y)
-        hearts.append(new_heart)
+    hearts = []  # start lege lijst
+    currentwave = 1
+    enemies = startnewave(currentwave, hearts)
+
 
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
@@ -648,15 +648,9 @@ def main():
         if enemies == list() :
             print("NEW WAVE STARTING")
             currentwave += 1
-            enemies = startnewave(currentwave)
+            enemies = startnewave(currentwave, hearts)
             kills_this_wave = 0 
-            total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # ✅ update totaal aantal enemies
-            # Spawn 2 nieuwe hartjes per wave
-        margin = 50  # afstand van de randen
-        for _ in range(2):
-            x = randint(margin, background_width - margin - 32)  # 32 = hart breedte
-            y = randint(margin, background_height - margin - 32) # 32 = hart hoogte
-            hearts.append(Heart(x, y))  
+            total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # ✅ update totaal aantal enemies  
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
