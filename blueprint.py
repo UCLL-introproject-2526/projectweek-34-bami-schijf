@@ -20,7 +20,7 @@ class Player:
     def __init__(self):
         self.__maxHp = 10
         self.__health = self.__maxHp
-        self.base_speed = 6
+        self.base_speed = 3
         self.speed = self.base_speed
         self.width = 60
         self.height = 100
@@ -37,16 +37,31 @@ class Player:
 
 
         self.direction = "right"
+        self.is_moving = False
+        self.walk_frame = 0
+        self.walk_timer = 0
 
         self.sprites = {
             "left": pygame.transform.scale(
                 pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha(),
                 (self.width, self.height)
             ),
+
+            "left_walking": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - left walking.png").convert_alpha(),
+                (self.width, self.height)
+            ),
+
             "right": pygame.transform.scale(
                 pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha(),
                 (self.width, self.height)
             ),
+
+            "right_walking": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - right walking.png").convert_alpha(),
+                (self.width, self.height)    
+            ),
+
             "left_punch": pygame.transform.scale(
                 pygame.image.load("sprites/PPAP - sprite/PPAP - left punch.png").convert_alpha(),
                 (self.width, self.height)
@@ -62,8 +77,21 @@ class Player:
         self.punch_timer = 0
 
     def draw(self, screen):
+        self.draw_shadow(screen)
         # Always draw player at the center of the screen
         screen.blit(self.image, (self.screen_x, self.screen_y))
+
+
+    def draw_shadow(self, screen):
+        shadow_width = self.width * 0.8
+        shadow_height = self.height * 0.25
+        shadow_x = self.screen_x + (self.width - shadow_width) / 2
+        shadow_y = self.screen_y + self.height - shadow_height * 0.6
+
+
+        shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow, (0, 0, 0, 100), shadow.get_rect())  # 100 = alpha
+        screen.blit(shadow, (shadow_x, shadow_y))
 
     def get_hp(self):
         return self.__health
@@ -120,15 +148,21 @@ class Player:
 
     def update_image(self):
         if self.punching:
-            if self.direction == "left":
-                self.image = self.sprites["left_punch"]
-            else:
-                self.image = self.sprites["right_punch"]
+            self.image = self.sprites[f"{self.direction}_punch"]
         else:
-            if self.direction == "left":
-                self.image = self.sprites["left"]
+            if self.is_moving:
+                # Wissel tussen standaard en walking sprite
+                self.walk_timer += 1
+                if self.walk_timer >= 10:
+                    self.walk_timer = 0
+                    self.walk_frame = 1 - self.walk_frame  
+
+                if self.walk_frame == 0:
+                    self.image = self.sprites[self.direction]
+                else:
+                    self.image = self.sprites[f"{self.direction}_walking"]
             else:
-                self.image = self.sprites["right"]
+                self.image = self.sprites[self.direction]
 
     def get_rect(self):
         return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
@@ -391,6 +425,7 @@ def main():
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
+            player.is_moving = False
             if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
                 player.speed = player.base_speed / (2**(1/2))
             else:
@@ -403,6 +438,19 @@ def main():
                 player.left()
             if held[pygame.K_RIGHT] or held[pygame.K_d]:
                 player.right()
+
+            if held[pygame.K_UP] or held[pygame.K_z]:
+                player.up()
+                player.is_moving = True
+            if held[pygame.K_DOWN] or held[pygame.K_s]:
+                player.down()
+                player.is_moving = True
+            if held[pygame.K_LEFT] or held[pygame.K_q]:
+                player.left()
+                player.is_moving = True
+            if held[pygame.K_RIGHT] or held[pygame.K_d]:
+                player.right()
+                player.is_moving = True
 
             player.update_image()
 
