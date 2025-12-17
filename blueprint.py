@@ -610,7 +610,6 @@ class Snowflake:
         self.speed = uniform(1, 3)
 
     def update(self, player_dx=0, player_dy=0):
-    def update(self, player_dx=0, player_dy=0):
         self.y += self.speed
         self.x -= player_dx * 1.7
         self.y -= player_dy * 1.7
