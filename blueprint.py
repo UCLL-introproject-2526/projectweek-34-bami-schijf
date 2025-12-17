@@ -115,6 +115,7 @@ class Player:
             self.__health = self.__maxHp
 
     def punch(self):
+        global punchitbox  # <<< hier toegevoegd
         if not self.punching:
             print("punch")
             if self.direction == "right":
@@ -130,6 +131,7 @@ class Player:
                 if punchitbox.get_rect().colliderect(npc.get_rect()):
                     npc.takedamage(2)
                     print("smacked an enemy ")
+
 
 
     def up(self):
@@ -457,7 +459,6 @@ def draw_minimap(screen, player: Player, npcs: list):
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
     # achtergrond minimap
-    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
 
@@ -487,13 +488,15 @@ class Snowflake:
         self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
         self.speed = uniform(1, 3)
 
-    def update(self):
+    def update(self, player_dx=0, player_dy=0):
         self.y += self.speed
+        self.x -= player_dx * 0.7
+        self.y -= player_dy * 0.7
         if self.y > screen_size[1]:
             self.y = randint(-50, -10)
             self.x = randint(0, screen_size[0])
             self.radius = randint(2, 6)
-            self.speed = uniform(1, 3)
+            self.speed = uniform(1, 3) 
 
     def draw(self, screen, minimap_rect):
         # alleen tekenen als het niet over de minimap valt
@@ -540,6 +543,22 @@ def main():
 
     running = True
     while running:
+
+        minimap_rect = pygame.Rect(
+            MINIMAP_PADDING, 
+            screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, 
+            MINIMAP_SIZE[0], 
+            MINIMAP_SIZE[1]
+        )
+
+        player_dx = 0
+        player_dy = 0
+        held = pygame.key.get_pressed()
+        if held[pygame.K_RIGHT] or held[pygame.K_d]: player_dx = player.speed
+        if held[pygame.K_LEFT] or held[pygame.K_q]: player_dx = -player.speed
+        if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
+        if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
+
         if enemies == list() :
             print("NEW WAVE STARTING")
             currentwave += 1
@@ -658,38 +677,27 @@ def main():
         renderFrame(screen, player, enemies,punchitbox, text)
         draw_health(screen, player)
 
-        minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-        
-        snow_surface.fill((0,0,0,0))  
-
-        if pygame.time.get_ticks() % 2 == 0:
-            for snow in snowflakes:
-                snow.update()
+        snow_surface.fill((0, 0, 0, 0))
 
         for snow in snowflakes:
-            if not minimap_rect.collidepoint(snow.x, snow.y):
-                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
+            snow.update(player_dx, player_dy)
+            snow.draw(snow_surface, minimap_rect)
 
-        screen.blit(snow_surface, (0,0))
+        screen.blit(snow_surface, (0, 0))
 
-
-
+        
         if minimap_update_timer <= 0:
             minimap_surface.fill(MINIMAP_BG_COLOR)
             minimap_surface.blit(mini_bg, (0,0)) 
-
-            # NPC posities
             scale_x = MINIMAP_SIZE[0] / background_width
             scale_y = MINIMAP_SIZE[1] / background_height
             for npc in enemies:
                 mini_npc_x = int(npc.world_x * scale_x)
                 mini_npc_y = int(npc.world_y * scale_y)
                 pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-    
             minimap_update_timer = minimap_update_interval
         else:
             minimap_update_timer -= 1
-
         screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
 
         px = MINIMAP_PADDING + int(player.world_x * scale_x)
