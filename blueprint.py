@@ -1,7 +1,13 @@
 import pygame
 import time
 from pygame.display import flip
-from random import randint, choice
+from random import randint, choice, uniform
+
+MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
+MINIMAP_PADDING = 20        # afstand van schermrand
+MINIMAP_BG_COLOR = (50, 50, 50)
+MINIMAP_PLAYER_COLOR = (255, 0, 0)
+MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
 
@@ -11,7 +17,7 @@ pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("arialblack", 24)
 
-background_image = pygame.image.load("background/background-map 4 (desert).png").convert()
+background_image = pygame.image.load("background/background-map 2 (snow).png").convert()
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
@@ -203,7 +209,7 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
-        self.health = 1
+        
     def draw_shadow(self, screen):
         shadow_width = self.width * 0.8
         shadow_height = self.height * 0.25
@@ -254,6 +260,7 @@ class Labubu(Npc):
                         "sprites\Labubu - sprite\Labubu - purple.png")
         self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
         self.health = 8
 
     def draw(self, screen):
@@ -276,6 +283,7 @@ class Zombie(Npc):
         self.speed = 2.5
         self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
         self.health = 3
 
     def draw(self, screen):
@@ -327,6 +335,7 @@ class Boss(Npc):
         self.world_y = background_height // 8
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
         self.health = 50
 
     def get_rect(self):
@@ -413,6 +422,57 @@ def startnewave(currentwave):
     enemies.append(Boss())
     return enemies
 
+def draw_minimap(screen, player: Player, npcs: list):
+    # positie linksonder
+    x = MINIMAP_PADDING
+    y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
+
+    # achtergrond minimap
+    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
+    pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
+    pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
+
+    mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
+    screen.blit(mini_bg, (x,y))
+
+    # schaal factor
+    scale_x = MINIMAP_SIZE[0] / background_width
+    scale_y = MINIMAP_SIZE[1] / background_height
+
+    for npc in npcs:
+        npc_rect = npc.get_rect()
+        mini_npc_x = x + int(npc.world_x * scale_x)
+        mini_npc_y = y + int(npc.world_y * scale_y)
+        # Kleine rechthoek of cirkel als representatie
+        pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+
+    # speler positie
+    px = x + int(player.world_x * scale_x)
+    py = y + int(player.world_y * scale_y)
+    pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
+
+class Snowflake:
+    def __init__(self):
+        self.x = randint(0, screen_size[0])
+        self.y = randint(-screen_size[1], 0)
+        self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
+        self.speed = uniform(1, 3)
+
+    def update(self):
+        self.y += self.speed
+        if self.y > screen_size[1]:
+            self.y = randint(-50, -10)
+            self.x = randint(0, screen_size[0])
+            self.radius = randint(2, 6)
+            self.speed = uniform(1, 3)
+
+    def draw(self, screen, minimap_rect):
+        # alleen tekenen als het niet over de minimap valt
+        if not minimap_rect.collidepoint(self.x, self.y):
+            pygame.draw.circle(screen, (255,255,255), (int(self.x), int(self.y)), self.radius)
+
+
+
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
@@ -435,6 +495,16 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave)
     
+    snowflakes = [Snowflake() for _ in range(100)]
+    snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
+
+    minimap_update_timer = 0  
+    minimap_update_interval = 90 
+    minimap_surface = pygame.Surface(MINIMAP_SIZE)  
+
+
+    mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
+
     running = True
     while running:
         if enemies == list() :
@@ -545,6 +615,44 @@ def main():
 
         renderFrame(screen, player, enemies, text)
         draw_health(screen, player)
+
+        minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
+        
+        snow_surface.fill((0,0,0,0))  
+
+        if pygame.time.get_ticks() % 2 == 0:
+            for snow in snowflakes:
+                snow.update()
+
+        for snow in snowflakes:
+            if not minimap_rect.collidepoint(snow.x, snow.y):
+                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
+
+        screen.blit(snow_surface, (0,0))
+
+
+
+        if minimap_update_timer <= 0:
+            minimap_surface.fill(MINIMAP_BG_COLOR)
+            minimap_surface.blit(mini_bg, (0,0)) 
+
+            # NPC posities
+            scale_x = MINIMAP_SIZE[0] / background_width
+            scale_y = MINIMAP_SIZE[1] / background_height
+            for npc in enemies:
+                mini_npc_x = int(npc.world_x * scale_x)
+                mini_npc_y = int(npc.world_y * scale_y)
+                pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+    
+            minimap_update_timer = minimap_update_interval
+        else:
+            minimap_update_timer -= 1
+
+        screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
+
+        px = MINIMAP_PADDING + int(player.world_x * scale_x)
+        py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
+        pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
         if player.get_hp() <= 0:
             btn = restart_button_rect()
