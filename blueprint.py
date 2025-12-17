@@ -659,7 +659,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
+            clicked = 0 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
@@ -689,6 +689,8 @@ def main():
                         # start alive timer on first space press
                         if player.alive_start is None:
                             player.alive_start = time.time()
+                        if enemies == list():
+                            cangonextwave = True
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
