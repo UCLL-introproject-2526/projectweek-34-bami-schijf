@@ -9,7 +9,7 @@ MINIMAP_BG_COLOR = (50, 50, 50)
 MINIMAP_PLAYER_COLOR = (255, 0, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
-screen_size = (1024, 768)
+screen_size = (800, 986)
 
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
@@ -513,11 +513,11 @@ def main():
 
     running = True
     while running:
-        if enemies == list() and currentwave <= 4 :
+        if len(enemies) <= 3 and currentwave <= 4 :
             
             print("NEW WAVE STARTING")
             currentwave += 1
-            enemies = startnewave(currentwave)
+            enemies += startnewave(currentwave)
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
