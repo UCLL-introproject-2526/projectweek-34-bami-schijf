@@ -9,8 +9,9 @@ pygame.init()
 screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
+font = pygame.font.SysFont("arialblack", 24)
 
-background_image = pygame.image.load("background/background-map 1 (basic).png").convert()
+background_image = pygame.image.load("background/background-map 4 (desert).png").convert()
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
@@ -21,7 +22,7 @@ class Player:
     def __init__(self):
         self.__maxHp = 10
         self.__health = self.__maxHp
-        self.base_speed = 6
+        self.base_speed = 3
         self.speed = self.base_speed
         self.width = 60
         self.height = 100
@@ -29,19 +30,40 @@ class Player:
         self.screen_x = screen_size[0] // 2 - self.width // 2
         self.screen_y = screen_size[1] // 2 - self.height // 2
         # World position tracks where the player is in the game world
-        self.world_x = screen_size[0] // 2
-        self.world_y = screen_size[1] // 2
+        self.world_x = background_width // 2 - self.width //2
+        self.world_y = background_height // 2 - self.height // 2
+
+        global scroll_x, scroll_y
+        scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
+        scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
+
+
         self.direction = "right"
+        self.is_moving = False
+        self.walk_frame = 0
+        self.walk_timer = 0
 
         self.sprites = {
             "left": pygame.transform.scale(
                 pygame.image.load("sprites/PPAP - sprite/PPAP - left.png").convert_alpha(),
                 (self.width, self.height)
             ),
+
+            "left_walking": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - left walking.png").convert_alpha(),
+                (self.width, self.height)
+            ),
+
             "right": pygame.transform.scale(
                 pygame.image.load("sprites/PPAP - sprite/PPAP - right.png").convert_alpha(),
                 (self.width, self.height)
             ),
+
+            "right_walking": pygame.transform.scale(
+                pygame.image.load("sprites/PPAP - sprite/PPAP - right walking.png").convert_alpha(),
+                (self.width, self.height)    
+            ),
+
             "left_punch": pygame.transform.scale(
                 pygame.image.load("sprites/PPAP - sprite/PPAP - left punch.png").convert_alpha(),
                 (self.width, self.height)
@@ -57,8 +79,21 @@ class Player:
         self.punch_timer = 0
 
     def draw(self, screen):
+        self.draw_shadow(screen)
         # Always draw player at the center of the screen
         screen.blit(self.image, (self.screen_x, self.screen_y))
+
+
+    def draw_shadow(self, screen):
+        shadow_width = self.width * 0.8
+        shadow_height = self.height * 0.25
+        shadow_x = self.screen_x + (self.width - shadow_width) / 2
+        shadow_y = self.screen_y + self.height - shadow_height * 0.6
+
+
+        shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow, (0, 0, 0, 100), shadow.get_rect())  # 100 = alpha
+        screen.blit(shadow, (shadow_x, shadow_y))
 
     def get_hp(self):
         return self.__health
@@ -80,6 +115,8 @@ class Player:
                 self.image = self.sprites["left_punch"]
             self.punching = True
             self.punch_timer = 30   # buffer frames
+            global punch_sound
+            punch_sound.play()
 
     def up(self):
         global scroll_y
@@ -113,15 +150,21 @@ class Player:
 
     def update_image(self):
         if self.punching:
-            if self.direction == "left":
-                self.image = self.sprites["left_punch"]
-            else:
-                self.image = self.sprites["right_punch"]
+            self.image = self.sprites[f"{self.direction}_punch"]
         else:
-            if self.direction == "left":
-                self.image = self.sprites["left"]
+            if self.is_moving:
+                # Wissel tussen standaard en walking sprite
+                self.walk_timer += 1
+                if self.walk_timer >= 10:
+                    self.walk_timer = 0
+                    self.walk_frame = 1 - self.walk_frame  
+
+                if self.walk_frame == 0:
+                    self.image = self.sprites[self.direction]
+                else:
+                    self.image = self.sprites[f"{self.direction}_walking"]
             else:
-                self.image = self.sprites["right"]
+                self.image = self.sprites[self.direction]
 
     def get_rect(self):
         return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
@@ -160,8 +203,18 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
-        self.health = 10
         
+    def draw_shadow(self, screen):
+        shadow_width = self.width * 0.8
+        shadow_height = self.height * 0.25
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        shadow_x = screen_x + (self.width - shadow_width) / 2
+        shadow_y = screen_y + self.height - shadow_height * 0.6  # pas hier eventueel offset aan
+        shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow, (0,0,0,100), shadow.get_rect())
+        screen.blit(shadow, (shadow_x, shadow_y))
+        self.health = 10
+    
     def trace(self, player: Player):
         m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
         self.world_x += m[0] * self.speed
@@ -209,14 +262,13 @@ class Labubu(Npc):
 
 
 class Zombie(Npc):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("sprites/Zombie - sprite/Zombie.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        pygame.draw.rect(
-            screen,
-            (0, 200, 0),
-            (screen_x, screen_y, self.width, self.height)
-        )
-
+        screen.blit(self.image, (screen_x, screen_y))
     def get_rect(self):
         shrink_w, shrink_h = 30, 40
         return pygame.Rect(
@@ -293,15 +345,43 @@ def renderFrame(screen, player: Player, npcs: list, text=None):
     drawables.sort(key=lambda obj: obj.world_y + obj.height)
     
     for obj in drawables:
+        if hasattr(obj, "draw_shadow"):
+            obj.draw_shadow(screen)
+
+    for obj in drawables:
         obj.draw(screen)
     
     player.draw(screen)
     if text:
         text.draw(screen)
 
+def draw_health(screen, player: Player):
+    padding = 8
+
+    hp_text = font.render(
+        f"HP: {player.get_hp()} / 10",
+        True,
+        (220,30,30)
+    )
+
+    bg_rect = hp_text.get_rect(topleft=(20,20))
+    bg_rect.inflate_ip(padding*2, padding*2)
+
+    pygame.draw.rect(screen, (180,180,180), bg_rect, border_radius=6)
+
+    text_rect = hp_text.get_rect(center=bg_rect.center)
+    screen.blit(hp_text, text_rect)
+
 def end_game():
     return Text("background/game_over.png")
 
+def restart_button_rect():
+    return pygame.Rect(
+        screen_size[0] // 2 - 100,
+        screen_size[1] // 2 + 100,
+        200,
+        50
+    )
 def startnewave(currentwave):
     enemies = []
     fruit,labubu,zombie = allenemywaves[currentwave]
@@ -318,10 +398,15 @@ def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
     pygame.mixer.music.play(-1, 0, 0)
-    dmg_sound = pygame.mixer.Sound('sounds/take_dmg.mp3')
-    game_over = pygame.mixer.Sound("sounds/game_over.mp3")
+    pygame.mixer.music.set_volume(0.25)
+    dmg_sound = pygame.mixer.Sound('sounds/damage.mp3')
+    game_over = pygame.mixer.Sound("sounds/gameover.mp3")
+    global punch_sound
+    punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
 
     foo = True
+    flash_timer = 0
+    flash_duration = 5
     player = Player()
     text = Text()
     invincible = False
@@ -346,6 +431,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if player.get_hp() <= 0:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if restart_button_rect().collidepoint(event.pos):
+                        main()
+                        return
+
             elif event.type == pygame.KEYDOWN:
                 if player.get_hp() > 0:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
@@ -360,6 +452,7 @@ def main():
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
+            player.is_moving = False
             if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
                 player.speed = player.base_speed / (2**(1/2))
             else:
@@ -372,6 +465,19 @@ def main():
                 player.left()
             if held[pygame.K_RIGHT] or held[pygame.K_d]:
                 player.right()
+
+            if held[pygame.K_UP] or held[pygame.K_z]:
+                player.up()
+                player.is_moving = True
+            if held[pygame.K_DOWN] or held[pygame.K_s]:
+                player.down()
+                player.is_moving = True
+            if held[pygame.K_LEFT] or held[pygame.K_q]:
+                player.left()
+                player.is_moving = True
+            if held[pygame.K_RIGHT] or held[pygame.K_d]:
+                player.right()
+                player.is_moving = True
 
             player.update_image()
 
@@ -397,6 +503,8 @@ def main():
                     npc.takedamage(10)
                     dmg_sound.play()
 
+                    flash_timer = flash_duration
+
                     print(player.get_hp())
                     if player.get_hp() <= 0 and foo:
                         text = end_game()
@@ -417,6 +525,22 @@ def main():
                 player.punching = False
 
         renderFrame(screen, player, enemies, text)
+        draw_health(screen, player)
+
+        if player.get_hp() <= 0:
+            btn = restart_button_rect()
+            pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
+
+            txt = font.render("RESTART", True, (0,0,0))
+            screen.blit(txt, txt.get_rect(center=btn.center))
+
+        if flash_timer > 0:
+            overlay = pygame.Surface(screen_size)
+            overlay.set_alpha(100)
+            overlay.fill((255,0,0))
+            screen.blit(overlay, (0,0))
+            flash_timer -= 1
+            
         flip()
 
     pygame.quit()
