@@ -793,7 +793,7 @@ def main():
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
 
-        if player.get_hp() <= 0 or currentwave == 1:
+        if player.get_hp() <= 0 or currentwave == 5:
             btn = restart_button_rect()
             pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
 
