@@ -588,12 +588,16 @@ def main():
     game_start = False
     currentwave = 1
     enemies = startnewave(currentwave)
-    
+    hearts = []
+    for _ in range(2):  # aantal hearts op de map
+        x = randint(0, background_width - player.width)
+        y = randint(0, background_height - player.height)
+        hearts.append(Heart(x, y))
     # snowflakes = [Snowflake() for _ in range(100)]
     # snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
 
     minimap_update_timer = 0  
-    minimap_update_interval = 60
+    minimap_update_interval = 90 
     minimap_surface = pygame.Surface(MINIMAP_SIZE)  
 
 
@@ -704,6 +708,10 @@ def main():
 
         # Check collisions
         player_rect = player.get_world_rect()
+        for heart in hearts[:]:
+            if player_rect.colliderect(heart.get_rect()):
+                player.regen_hp(heart.amount)
+                hearts.remove(heart)
         for npc in enemies:
             if player.punching or not invincible:
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
