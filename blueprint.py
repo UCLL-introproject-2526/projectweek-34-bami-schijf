@@ -21,9 +21,10 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [100,100,100,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
+allenemywaves = {1: [0,0,10,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
 enemies = []
 punchitbox = None
+global cangonextwave 
 cangonextwave = True
 
 
@@ -603,6 +604,7 @@ def main():
     invincible = False
     stunned = False
     game_start = False
+    global cangonextwave
     currentwave = 1
     kills_this_wave = 0  # aantal kills in de huidige wave
     total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # totaal aantal enemies in deze wave
