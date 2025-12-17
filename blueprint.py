@@ -85,9 +85,6 @@ class Player:
         self.image = self.sprites["right"]
         self.punching = False
         self.punch_timer = 0
-        # start time used to calculate how long the player has been alive
-        # set to None and start when player first presses space
-        self.alive_start = None
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -312,7 +309,7 @@ class Zombie(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 2.5
-        self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
         self.health = 3
@@ -432,36 +429,6 @@ def draw_health(screen, player: Player):
     text_rect = hp_text.get_rect(center=bg_rect.center)
     screen.blit(hp_text, text_rect)
 
-
-def draw_timer(screen, player: Player):
-    """Draw a simple MM:SS alive timer below the HP display."""
-    # If timer hasn't started yet, show 00:00
-    if player.alive_start is None:
-        elapsed = 0
-    else:
-        # If player is dead, freeze the timer at the moment of death
-        if player.get_hp() <= 0:
-            # store the time of death on first observation so we don't keep updating it
-            if not hasattr(player, "alive_end") or player.alive_end is None:
-                player.alive_end = time.time()
-            elapsed = int(player.alive_end - player.alive_start)
-        else:
-            # ensure we clear any previous alive_end when player is alive again
-            if hasattr(player, "alive_end"):
-                player.alive_end = None
-            elapsed = int(time.time() - player.alive_start)
-    mins = elapsed // 60
-    secs = elapsed % 60
-    timer_text = f"{mins:02}:{secs:02}"
-    text_surf = font.render(timer_text, True, (255, 255, 255))
-    # position timer at the top-center of the screen
-    bg_rect = text_surf.get_rect(center=(screen_size[0] // 2, 30))
-    bg_rect.inflate_ip(8, 8)
-    pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
-    # blit text centered inside the background rect
-    text_pos = text_surf.get_rect(center=bg_rect.center)
-    screen.blit(text_surf, text_pos)
-
 def end_game():
     return Text("background/game_over.png")
 
@@ -523,8 +490,8 @@ class Snowflake:
 
     def update(self, player_dx=0, player_dy=0):
         self.y += self.speed
-        self.x -= player_dx * 0.7
-        self.y -= player_dy * 0.7
+        self.x -= player_dx * 1.7
+        self.y -= player_dy * 1.7
         if self.y > screen_size[1]:
             self.y = randint(-50, -10)
             self.x = randint(0, screen_size[0])
@@ -568,7 +535,7 @@ def main():
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
 
     minimap_update_timer = 0  
-    minimap_update_interval = 60
+    minimap_update_interval = 90 
     minimap_surface = pygame.Surface(MINIMAP_SIZE)  
 
 
@@ -632,9 +599,6 @@ def main():
                             player.punch()
                         text = False
                         game_start = True
-                        # start alive timer on first space press
-                        if player.alive_start is None:
-                            player.alive_start = time.time()
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
@@ -712,7 +676,6 @@ def main():
 
         renderFrame(screen, player, enemies,punchitbox, text)
         draw_health(screen, player)
-        draw_timer(screen, player)
 
         snow_surface.fill((0, 0, 0, 0))
 
