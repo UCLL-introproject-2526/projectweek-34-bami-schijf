@@ -265,7 +265,7 @@ class Labubu(Npc):
 class Zombie(Npc):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.health = 3
 
