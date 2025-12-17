@@ -16,6 +16,8 @@ background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
 allenemywaves = {1: [2,3,3],2: [1,2,1],3: [0,0,0],4: [0,0,0]}
+enemies = []
+punchitbox = None
 
 
 class Player:
@@ -115,8 +117,14 @@ class Player:
                 self.image = self.sprites["left_punch"]
             self.punching = True
             self.punch_timer = 30   # buffer frames
+            punchitbox = hitBox(0.5,[40,40],self)
             global punch_sound
             punch_sound.play()
+            for npc in enemies:
+                if punchitbox.get_rect().colliderect(npc.get_rect()):
+                    npc.takedamage(2)
+                    print("smacked an enemy ")
+
 
     def up(self):
         global scroll_y
@@ -178,8 +186,8 @@ class hitBox:
         self.startTime = time.time()
         self.duration = duration
         self.active = True
-        self.x = player.x
-        self.y = player.y
+        self.x = 20  # even gehardcode want de player heeft geen x en y coordinaten
+        self.y = 20
         self.player = player
         self.size = size
 
@@ -194,6 +202,24 @@ class hitBox:
         if self.time_left <= 0:
             self.active = False
             self.player.look_right()
+    def get_rect(self):
+        if self.player.direction == "right":
+            x = self.player.world_x + self.player.width
+        else:
+            x = self.player.world_x - self.size[0]
+
+        y = self.player.world_y + self.player.height // 3
+
+        return pygame.Rect(x, y, self.size[0], self.size[1])
+    
+    def draw(self, screen):
+        rect = self.get_rect()
+        screen_rect = pygame.Rect(
+            rect.x - scroll_x,
+            rect.y - scroll_y,
+            rect.width,
+            rect.height
+        )
 
 class Npc:
     def __init__(self):
@@ -203,6 +229,7 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
+        self.health = 10
         
     def draw_shadow(self, screen):
         shadow_width = self.width * 0.8
@@ -264,7 +291,7 @@ class Labubu(Npc):
 class Zombie(Npc):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("sprites/Zombie - sprite/Zombie.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Zombie - sprite/Zombie - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
@@ -277,7 +304,6 @@ class Zombie(Npc):
             self.width - shrink_w,
             self.height - shrink_h
         )
-
 
 class Fruit(Npc):
     def __init__(self):
@@ -337,9 +363,8 @@ class Text:
         screen.blit(self.image, (self.x, self.y))
 
 
-def renderFrame(screen, player: Player, npcs: list, text=None):
+def renderFrame(screen, player: Player, npcs: list, hit :hitBox , text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
-    
     
     drawables = npcs[:] # lijst kopie
     drawables.sort(key=lambda obj: obj.world_y + obj.height)
@@ -354,6 +379,9 @@ def renderFrame(screen, player: Player, npcs: list, text=None):
     player.draw(screen)
     if text:
         text.draw(screen)
+
+    if hit:
+        hit.draw(screen)
 
 def draw_health(screen, player: Player):
     padding = 8
@@ -382,6 +410,7 @@ def restart_button_rect():
         200,
         50
     )
+
 def startnewave(currentwave):
     enemies = []
     fruit,labubu,zombie = allenemywaves[currentwave]
@@ -412,7 +441,6 @@ def main():
     invincible = False
     stunned = False
     game_start = False
-    enemies = []
     currentwave = 1
     enemies = startnewave(currentwave)
     
@@ -499,7 +527,7 @@ def main():
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
                     invincible = 60        # 2 sec iframes
                     stunned = 10
-                    #player.take_damage(2)
+                    player.take_damage(2)
                     npc.takedamage(10)
                     dmg_sound.play()
 
@@ -524,7 +552,7 @@ def main():
                     player.image = player.sprites["left"]
                 player.punching = False
 
-        renderFrame(screen, player, enemies, text)
+        renderFrame(screen, player, enemies,punchitbox, text)
         draw_health(screen, player)
 
         if player.get_hp() <= 0:
@@ -544,7 +572,6 @@ def main():
         flip()
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
