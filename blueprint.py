@@ -85,6 +85,8 @@ class Player:
                 self.image = self.sprites["left_punch"]
             self.punching = True
             self.punch_timer = 30   # buffer frames
+            global punch_sound
+            punch_sound.play()
 
     def up(self):
         global scroll_y
@@ -342,8 +344,10 @@ def main():
     pygame.mixer.music.load('sounds/background.mp3')
     pygame.mixer.music.play(-1, 0, 0)
     pygame.mixer.music.set_volume(0.25)
-    dmg_sound = pygame.mixer.Sound('sounds/take_dmg.mp3')
-    game_over = pygame.mixer.Sound("sounds/game_over.mp3")
+    dmg_sound = pygame.mixer.Sound('sounds/damage.mp3')
+    game_over = pygame.mixer.Sound("sounds/gameover.mp3")
+    global punch_sound
+    punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
 
     foo = True
     flash_timer = 0
