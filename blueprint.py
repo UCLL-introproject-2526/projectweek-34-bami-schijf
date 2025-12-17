@@ -359,7 +359,7 @@ class Text:
         self.image = pygame.image.load(path).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.x = (screen_size[0] - self.width) // 2
-        self.y = (screen_size[1] // 2) + 50
+        self.y = (screen_size[1] // 2) + 150
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
@@ -588,7 +588,7 @@ def main():
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
                     invincible = 60        # 2 sec iframes
                     stunned = 10
-                    #player.take_damage(2)
+                    player.take_damage(2)
                     npc.takedamage(10)
                     dmg_sound.play()
 
