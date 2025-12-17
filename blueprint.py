@@ -301,6 +301,7 @@ def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
     pygame.mixer.music.play(-1, 0, 0)
+    pygame.mixer.music.set_volume(0.25)
     dmg_sound = pygame.mixer.Sound('sounds/take_dmg.mp3')
     game_over = pygame.mixer.Sound("sounds/game_over.mp3")
 
