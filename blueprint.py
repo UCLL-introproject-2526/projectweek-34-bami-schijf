@@ -14,6 +14,8 @@ background_image = pygame.image.load("background/background-map 1 (basic).png").
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
+allenemywaves = {1: [2,3,3],2: [1,2,1],3: [0,0,0],4: [0,0,0]}
+
 
 class Player:
     def __init__(self):
@@ -128,7 +130,6 @@ class Player:
         # Return collision box based on world position
         return pygame.Rect(self.world_x, self.world_y, self.width, self.height)
 
-
 class hitBox:
     def __init__(self, duration, size, player: Player):
         self.startTime = time.time()
@@ -151,7 +152,6 @@ class hitBox:
             self.active = False
             self.player.look_right()
 
-
 class Npc:
     def __init__(self):
         self.world_x, self.world_y = randint(0, background_width), randint(0, background_height)
@@ -160,6 +160,7 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
+        self.health = 10
         
     def trace(self, player: Player):
         m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
@@ -176,13 +177,16 @@ class Npc:
             self.width - self.shrink_width,
             self.height - self.shrink_height
         )
-
+    def takedamage(self,ammount):
+        if self.health - ammount <= 0 : 
+            self.health = 0
+        else:
+            self.health =- ammount
 
 def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
     size = (dx**2 + dy**2)**(1/2)
     return (dx/size, dy/size)
-
 
 class Labubu(Npc):
     def __init__(self):
@@ -298,6 +302,17 @@ def renderFrame(screen, player: Player, npcs: list, text=None):
 def end_game():
     return Text("background/game_over.png")
 
+def startnewave(currentwave):
+    enemies = []
+    fruit,labubu,zombie = allenemywaves[currentwave]
+    for _ in range(fruit):
+        enemies.append(Fruit())
+    for _ in range(labubu):
+        enemies.append(Labubu())
+    for _ in range(zombie):
+        enemies.append(Zombie())
+    enemies.append(Boss())
+    return enemies
 
 def main():
     pygame.mixer.init()
@@ -313,16 +328,15 @@ def main():
     stunned = False
     game_start = False
     enemies = []
-    for _ in range(3):
-        enemies.append(Fruit())
-    for _ in range(2):
-        enemies.append(Labubu())
-    for _ in range(4):
-        enemies.append(Zombie())
-    enemies.append(Boss())
+    currentwave = 1
+    enemies = startnewave(currentwave)
     
     running = True
     while running:
+        if enemies == list() :
+            print("NEW WAVE STARTING")
+            currentwave =+ 1
+            enemies = startnewave(currentwave)
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
@@ -374,10 +388,13 @@ def main():
         player_rect = player.get_world_rect()
         if invincible == False:
             for npc in enemies:
+                if npc.health <= 0 :
+                    enemies.remove(npc)
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
                     invincible = 60        # 2 sec iframes
                     stunned = 10
-                    player.take_damage(2)
+                    #player.take_damage(2)
+                    npc.takedamage(10)
                     dmg_sound.play()
 
                     print(player.get_hp())
