@@ -86,6 +86,9 @@ class Player:
         self.image = self.sprites["right"]
         self.punching = False
         self.punch_timer = 0
+        # timer: not started until first space press
+        self.alive_start = None
+        self.alive_end = None
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -116,6 +119,7 @@ class Player:
             self.__health = self.__maxHp
 
     def punch(self):
+        global punchitbox  # <<< hier toegevoegd
         if not self.punching:
             print("punch")
             if self.direction == "right":
@@ -131,6 +135,7 @@ class Player:
                 if punchitbox.get_rect().colliderect(npc.get_rect()):
                     npc.takedamage(2)
                     print("smacked an enemy ")
+
 
 
     def up(self):
@@ -308,7 +313,7 @@ class Zombie(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 2.5
-        self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
         self.health = 3
@@ -428,6 +433,32 @@ def draw_health(screen, player: Player):
     text_rect = hp_text.get_rect(center=bg_rect.center)
     screen.blit(hp_text, text_rect)
 
+
+def draw_timer(screen, player: Player):
+    """Draw MM:SS alive timer centered at top; pauses when player dies."""
+    if player.alive_start is None:
+        elapsed = 0
+    else:
+        if player.get_hp() <= 0:
+            # store death time once
+            if player.alive_end is None:
+                player.alive_end = time.time()
+            elapsed = int(player.alive_end - player.alive_start)
+        else:
+            # clear any previous death time when alive
+            player.alive_end = None
+            elapsed = int(time.time() - player.alive_start)
+
+    mins = elapsed // 60
+    secs = elapsed % 60
+    timer_text = f"{mins:02}:{secs:02}"
+    text_surf = font.render(timer_text, True, (255, 255, 255))
+    bg_rect = text_surf.get_rect(center=(screen_size[0] // 2, 30))
+    bg_rect.inflate_ip(8, 8)
+    pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
+    text_pos = text_surf.get_rect(center=bg_rect.center)
+    screen.blit(text_surf, text_pos)
+
 def end_game():
     return Text("background/game_over.png")
 
@@ -458,7 +489,6 @@ def draw_minimap(screen, player: Player, npcs: list):
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
     # achtergrond minimap
-    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
 
@@ -488,13 +518,15 @@ class Snowflake:
         self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
         self.speed = uniform(1, 3)
 
-    def update(self):
+    def update(self, player_dx=0, player_dy=0):
         self.y += self.speed
+        self.x -= player_dx * 1.7
+        self.y -= player_dy * 1.7
         if self.y > screen_size[1]:
             self.y = randint(-50, -10)
             self.x = randint(0, screen_size[0])
             self.radius = randint(2, 6)
-            self.speed = uniform(1, 3)
+            self.speed = uniform(1, 3) 
 
     def draw(self, screen, minimap_rect):
         # alleen tekenen als het niet over de minimap valt
@@ -541,8 +573,28 @@ def main():
 
     running = True
     while running:
+<<<<<<< HEAD
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
+=======
+
+        minimap_rect = pygame.Rect(
+            MINIMAP_PADDING, 
+            screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, 
+            MINIMAP_SIZE[0], 
+            MINIMAP_SIZE[1]
+        )
+
+        player_dx = 0
+        player_dy = 0
+        held = pygame.key.get_pressed()
+        if held[pygame.K_RIGHT] or held[pygame.K_d]: player_dx = player.speed
+        if held[pygame.K_LEFT] or held[pygame.K_q]: player_dx = -player.speed
+        if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
+        if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
+
+        if enemies == list() :
+>>>>>>> 76c1423a2401260a832e8658e64f09de5993a8be
             print("NEW WAVE STARTING")
             currentwave += 1
             enemies = startnewave(currentwave)
@@ -582,8 +634,14 @@ def main():
                             player.punch()
                         text = False
                         game_start = True
+<<<<<<< HEAD
                         if enemies == list():
                             cangonextwave = True
+=======
+                        # start alive timer on first space press
+                        if player.alive_start is None:
+                            player.alive_start = time.time()
+>>>>>>> 76c1423a2401260a832e8658e64f09de5993a8be
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
@@ -661,39 +719,29 @@ def main():
 
         renderFrame(screen, player, enemies,punchitbox, text)
         draw_health(screen, player)
+        draw_timer(screen, player)
 
-        minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-        
-        snow_surface.fill((0,0,0,0))  
-
-        if pygame.time.get_ticks() % 2 == 0:
-            for snow in snowflakes:
-                snow.update()
+        snow_surface.fill((0, 0, 0, 0))
 
         for snow in snowflakes:
-            if not minimap_rect.collidepoint(snow.x, snow.y):
-                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
+            snow.update(player_dx, player_dy)
+            snow.draw(snow_surface, minimap_rect)
 
-        screen.blit(snow_surface, (0,0))
+        screen.blit(snow_surface, (0, 0))
 
-
-
+        
         if minimap_update_timer <= 0:
             minimap_surface.fill(MINIMAP_BG_COLOR)
             minimap_surface.blit(mini_bg, (0,0)) 
-
-            # NPC posities
             scale_x = MINIMAP_SIZE[0] / background_width
             scale_y = MINIMAP_SIZE[1] / background_height
             for npc in enemies:
                 mini_npc_x = int(npc.world_x * scale_x)
                 mini_npc_y = int(npc.world_y * scale_y)
                 pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-    
             minimap_update_timer = minimap_update_interval
         else:
             minimap_update_timer -= 1
-
         screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
 
         px = MINIMAP_PADDING + int(player.world_x * scale_x)
