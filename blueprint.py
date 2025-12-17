@@ -94,9 +94,10 @@ class hitBox:
         self.startTime = time.time()
         self.duration = duration
         self.active = True
+        self.x = player.x
+        self.y = player.y
         self.player = player
         self.size = size
-        
 
 
     def update(self, dt):
@@ -111,6 +112,8 @@ class hitBox:
                 self.active = False
                 self.player.look_right()
 
+    def get_rect(self): #COLLISION BOX HITBOX
+        return pygame.Rect(self.x, self.y, self.size[0], self.size[1])
 
 
 class Npc:
@@ -257,6 +260,7 @@ def main():
 
     player = Player()
     tutorial = TutorialText()
+    newhitbox = None
 
     enemies = []
     for _ in range(3):
@@ -297,8 +301,16 @@ def main():
             player.right()
         for enemy in enemies:
             enemy.trace(player)
-
+        hitnpcs = []
         player_rect = player.get_rect()
+
+        if isinstance(newhitbox, hitBox):
+            hitbox_rect = newhitbox.get_rect()
+            for npc in enemies:
+                if hitbox_rect.colliderect(npc.get_rect()):
+                 hitnpcs.append(npc)
+                 del npc
+
         for npc in enemies:
             if player_rect.colliderect(npc.get_rect()):
                 player.x, player.y = old_x, old_y
@@ -312,7 +324,6 @@ def main():
                 else:
                     player.image = player.sprites["left"]
                 player.punching = False
-
 
         renderFrame(screen, player, enemies, tutorial)
         flip()
