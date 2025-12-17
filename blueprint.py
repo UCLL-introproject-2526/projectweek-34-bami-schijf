@@ -21,9 +21,10 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [0,0,10,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
+allenemywaves = {1: [100,100,100,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
 enemies = []
 punchitbox = None
+cangonextwave = True
 
 
 class Player:
@@ -430,6 +431,19 @@ def draw_health(screen, player: Player):
     text_rect = hp_text.get_rect(center=bg_rect.center)
     screen.blit(hp_text, text_rect)
 
+def draw_wave_progress(screen, kills, total):
+    if total <= 0:
+        progress = 0
+    else:
+        progress = int(kills / total * 100)
+    
+    progress_text = font.render(f"Wave Progress: {progress}%", True, (255, 255, 255))
+    bg_rect = progress_text.get_rect(topleft=(15, 80)) 
+    bg_rect.inflate_ip(8, 8)
+    pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
+    text_rect = progress_text.get_rect(center=bg_rect.center)
+    screen.blit(progress_text, text_rect)
+
 
 def draw_timer(screen, player: Player):
     """Draw MM:SS alive timer centered at top; pauses when player dies."""
@@ -486,10 +500,13 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     # positie linksonder
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
+
+    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
     # achtergrond minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
+
 
     screen.blit(MINIMAP_BG, (x, y))
 
@@ -586,6 +603,8 @@ def main():
     stunned = False
     game_start = False
     currentwave = 1
+    kills_this_wave = 0  # aantal kills in de huidige wave
+    total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # totaal aantal enemies in deze wave
     enemies = startnewave(currentwave)
     hearts = []
     for _ in range(2):
@@ -606,7 +625,8 @@ def main():
 
     running = True
     while running:
-
+        if enemies == list() and cangonextwave == True :
+            cangonextwave = False
         minimap_rect = pygame.Rect(
             MINIMAP_PADDING, 
             screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, 
@@ -623,10 +643,12 @@ def main():
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
 
         if enemies == list() :
-            
             print("NEW WAVE STARTING")
             currentwave += 1
             enemies = startnewave(currentwave)
+            kills_this_wave = 0 
+            total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # ✅ update totaal aantal enemies
+
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
@@ -724,8 +746,11 @@ def main():
                         invincible = 60
                         stunned = 10
                     
-                    if npc.health <= 0 :
-                        enemies.remove(npc)
+                    if npc.health <= 0:
+                        if npc in enemies: 
+                            enemies.remove(npc)
+                            kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)  # max 100%
+
                     dmg_sound.play()
 
                     flash_timer = flash_duration
@@ -752,6 +777,8 @@ def main():
 
         renderFrame(screen, player, enemies, hearts, punchitbox, text)
         draw_health(screen, player)
+        draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
+        draw_timer(screen, player)
         draw_minimap(screen, player, enemies, hearts)
 
         minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
