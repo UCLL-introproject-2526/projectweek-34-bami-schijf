@@ -230,11 +230,11 @@ class Npc:
             self.width - self.shrink_width,
             self.height - self.shrink_height
         )
-    def takedamage(self,ammount):
-        if self.health - ammount <= 0 : 
+    def takedamage(self,amount):
+        if self.health - amount <= 0 : 
             self.health = 0
         else:
-            self.health =- ammount
+            self.health -= amount
 
 def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
@@ -246,6 +246,8 @@ class Labubu(Npc):
         super().__init__()
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        self.health = 8
 
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
@@ -264,8 +266,11 @@ class Labubu(Npc):
 class Zombie(Npc):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("sprites/Zombie - sprite/Zombie.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        self.health = 3
+
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         screen.blit(self.image, (screen_x, screen_y))
@@ -282,6 +287,9 @@ class Zombie(Npc):
 class Fruit(Npc):
     def __init__(self):
         super().__init__()
+
+        self.health = 5
+
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         pygame.draw.rect(
@@ -309,6 +317,8 @@ class Boss(Npc):
         self.world_y = background_height // 8
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        self.health = 50
 
     def get_rect(self):
         shrink_w, shrink_h = 80, 120
