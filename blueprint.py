@@ -10,7 +10,7 @@ screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
 
-background_image = pygame.image.load("background/background-map 1 (basic).png").convert()
+background_image = pygame.image.load("background/background-map 4 (desert).png").convert()
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
