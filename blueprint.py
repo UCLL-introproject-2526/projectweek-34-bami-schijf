@@ -20,7 +20,7 @@ wave_images = [
     pygame.image.load("next_wave/wave 2.png").convert_alpha(),
     pygame.image.load("next_wave/wave 3.png").convert_alpha(),
     pygame.image.load("next_wave/wave 4.png").convert_alpha(),
-    pygame.image.load("next_wave/you win.png").convert_alpha(),
+    pygame.image.load("next_wave/you win.png").convert_alpha()
 ]
 
 pygame.display.set_caption("Fixed Game")
@@ -31,7 +31,7 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [0,0,10,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -100,9 +100,7 @@ class Player:
         # timer: not started until first space press
         self.alive_start = None
         self.alive_end = None
-        # timer: not started until first space press
-        self.alive_start = None
-        self.alive_end = None
+
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -201,7 +199,6 @@ class Player:
         return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
     
     def get_world_rect(self):
-        # Return collision box based on world position
         return pygame.Rect(self.world_x, self.world_y, self.width, self.height)
 
 class hitBox:
@@ -209,8 +206,6 @@ class hitBox:
         self.startTime = time.time()
         self.duration = duration
         self.active = True
-        self.x = 20  # even gehardcode want de player heeft geen x en y coordinaten
-        self.y = 20
         self.x = 20  # even gehardcode want de player heeft geen x en y coordinaten
         self.y = 20
         self.player = player
@@ -227,6 +222,7 @@ class hitBox:
         if self.time_left <= 0:
             self.active = False
             self.player.look_right()
+    
     def get_rect(self):
         if self.player.direction == "right":
             x = self.player.world_x + self.player.width
@@ -236,43 +232,22 @@ class hitBox:
         y = self.player.world_y + self.player.height // 3
 
         return pygame.Rect(x, y, self.size[0], self.size[1])
-    
-    def draw(self, screen):
-        rect = self.get_rect()
-        screen_rect = pygame.Rect(
-            rect.x - scroll_x,
-            rect.y - scroll_y,
-            rect.width,
-            rect.height
-        )
-    def get_rect(self):
-        if self.player.direction == "right":
-            x = self.player.world_x + self.player.width
-        else:
-            x = self.player.world_x - self.size[0]
-
-        y = self.player.world_y + self.player.height // 3
-
-        return pygame.Rect(x, y, self.size[0], self.size[1])
-    
-    def draw(self, screen):
-        rect = self.get_rect()
-        screen_rect = pygame.Rect(
-            rect.x - scroll_x,
-            rect.y - scroll_y,
-            rect.width,
-            rect.height
-        )
 
 class Npc:
     def __init__(self):
-        self.world_x, self.world_y = randint(0, background_width), randint(0, background_height)
+        self.world_x, self.world_y = randint(screen_size[0]/2, background_width-screen_size[0]/2), randint(screen_size[1]/2, background_height-screen_size[1]/2)
         self.width, self.height = 45, 60
         self.base_speed = 3
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
-        
+        self.foo = True             # onderscheidt alle npc's van invisEnemy
+
+    def draw(self, screen):
+        if self.foo:
+            screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+            screen.blit(self.image, (screen_x, screen_y))
+
     def draw_shadow(self, screen):
         shadow_width = self.width * 0.8
         shadow_height = self.height * 0.25
@@ -282,13 +257,12 @@ class Npc:
         shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
         pygame.draw.ellipse(shadow, (0,0,0,100), shadow.get_rect())
         screen.blit(shadow, (shadow_x, shadow_y))
-        self.health = 10
-        self.health = 10
-    
+
     def trace(self, player: Player):
-        m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
-        self.world_x += m[0] * self.speed
-        self.world_y += m[1] * self.speed
+        if self.foo:
+            m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
+            self.world_x += m[0] * self.speed
+            self.world_y += m[1] * self.speed
 
     def get_screen_pos(self, scroll_x, scroll_y):
         return (self.world_x - scroll_x, self.world_y - scroll_y)
@@ -300,6 +274,7 @@ class Npc:
             self.width - self.shrink_width,
             self.height - self.shrink_height
         )
+
     def takedamage(self,amount):
         if self.health - amount <= 0 : 
             self.health = 0
@@ -311,10 +286,15 @@ def getDir(selfCoords: tuple, playerCoords: tuple):
     size = (dx**2 + dy**2)**(1/2)
     return (dx/size, dy/size)
 
+class invisEnemy(Npc):
+    def __init__(self):
+        super().__init__()
+        self.width, self.height = 0,0
+        self.foo = False
+
 class Labubu(Npc):
     def __init__(self):
         super().__init__()
-        self.speed = 4
         self.speed = 4
         self.sprites = ("sprites\Labubu - sprite\Labubu -  pink.png",
                         "sprites/Labubu - sprite/Labubu - dark blue.png",
@@ -325,23 +305,9 @@ class Labubu(Npc):
                         "sprites\Labubu - sprite\Labubu - purple.png")
         self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
+        self.shrink_width = 30
+        self.shrink_height = 40
         self.health = 8
-        self.health = 8
-
-    def draw(self, screen):
-        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        screen.blit(self.image, (screen_x, screen_y))
-
-    def get_rect(self):
-        shrink_w, shrink_h = 30, 40
-        return pygame.Rect(
-            self.world_x + shrink_w // 2,
-            self.world_y + shrink_h // 2,
-            self.width - shrink_w,
-            self.height - shrink_h
-        )
-
 
 class Zombie(Npc):
     def __init__(self):
@@ -349,20 +315,9 @@ class Zombie(Npc):
         self.speed = 2.5
         self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
+        self.shrink_width = 30
+        self.shrink_height = 40
         self.health = 3
-
-    def draw(self, screen):
-        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        screen.blit(self.image, (screen_x, screen_y))
-    def get_rect(self):
-        shrink_w, shrink_h = 30, 40
-        return pygame.Rect(
-            self.world_x + shrink_w // 2,
-            self.world_y + shrink_h // 2,
-            self.width - shrink_w,
-            self.height - shrink_h
-        )
 
 class Fruit(Npc):
     def __init__(self):
@@ -370,26 +325,14 @@ class Fruit(Npc):
         self.speed = 3.5
         self.health = 5
         self.width = 70
+        self.shrink_width = 5
+        self.shrink_height = 10
         self.sprites = ("sprites\Fruit - sprite\Apple.png",
                         "sprites\Fruit - sprite\Banana.png",
                         "sprites\Fruit - sprite\Cherry.png",
                         "sprites\Fruit - sprite\Orange.png")
         self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
-    def draw(self, screen):
-        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        screen.blit(self.image, (screen_x, screen_y))
-
-    def get_rect(self):
-        shrink_w, shrink_h = 5, 10
-        return pygame.Rect(
-            self.world_x + shrink_w // 2,
-            self.world_y + shrink_h // 2,
-            self.width - shrink_w,
-            self.height - shrink_h
-        )
-
 
 class Boss(Npc):
     def __init__(self):
@@ -400,22 +343,9 @@ class Boss(Npc):
         self.world_y = background_height // 8
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-
-        self.health = 25
-
-    def get_rect(self):
-        shrink_w, shrink_h = 80, 120
-        return pygame.Rect(
-            self.world_x + shrink_w // 2,
-            self.world_y + shrink_h // 2,
-            self.width - shrink_w,
-            self.height - shrink_h
-        )
-    
-    def draw(self, screen):
-        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        screen.blit(self.image, (screen_x, screen_y))
-
+        self.shrink_width = 80
+        self.shrink_height = 120
+        self.health = 1000
 
 class Text:
     def __init__(self, path="background/tutorial gamecontrols.png"):
@@ -430,7 +360,6 @@ class Text:
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-
 def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     
@@ -442,16 +371,13 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
             obj.draw_shadow(screen)
 
     for obj in drawables:
-        obj.draw(screen)
+        if obj.foo:         # exclude invisible enemy
+            obj.draw(screen)
     for heart in hearts:
         heart.draw(screen, scroll_x, scroll_y)
     player.draw(screen)
     if text:
         text.draw(screen)
-
-    if hit:
-        hit.draw(screen)
-
     if hit:
         hit.draw(screen)
 
@@ -485,45 +411,17 @@ def draw_wave_progress(screen, kills, total):
     text_rect = progress_text.get_rect(center=bg_rect.center)
     screen.blit(progress_text, text_rect)
 
-
 def draw_timer(screen, player: Player):
-    """Draw MM:SS alive timer centered at top; pauses when player dies."""
     if player.alive_start is None:
         elapsed = 0
     else:
         if player.get_hp() <= 0:
-            # store death time once
+            # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
             elapsed = int(player.alive_end - player.alive_start)
         else:
-            # clear any previous death time when alive
-            player.alive_end = None
-            elapsed = int(time.time() - player.alive_start)
-
-    mins = elapsed // 60
-    secs = elapsed % 60
-    timer_text = f"{mins:02}:{secs:02}"
-    text_surf = font.render(timer_text, True, (255, 255, 255))
-    bg_rect = text_surf.get_rect(center=(screen_size[0] // 2, 30))
-    bg_rect.inflate_ip(8, 8)
-    pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
-    text_pos = text_surf.get_rect(center=bg_rect.center)
-    screen.blit(text_surf, text_pos)
-
-
-def draw_timer(screen, player: Player):
-    """Draw MM:SS alive timer centered at top; pauses when player dies."""
-    if player.alive_start is None:
-        elapsed = 0
-    else:
-        if player.get_hp() <= 0:
-            # store death time once
-            if player.alive_end is None:
-                player.alive_end = time.time()
-            elapsed = int(player.alive_end - player.alive_start)
-        else:
-            # clear any previous death time when alive
+            # herstart de timer
             player.alive_end = None
             elapsed = int(time.time() - player.alive_start)
 
@@ -550,7 +448,7 @@ def restart_button_rect():
 
 def startnewave(currentwave, hearts):
     enemies = []
-    fruit,labubu,zombie,boss = allenemywaves.get(currentwave)
+    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave)
     for _ in range(fruit):
         enemies.append(Fruit())
     for _ in range(labubu):
@@ -559,14 +457,18 @@ def startnewave(currentwave, hearts):
         enemies.append(Zombie())
     for _ in range(boss):
         enemies.append(Boss())
-        # Spawn 2 hartjes bij elke wave
+    for _ in range(invis_enemy):
+        enemies.append(invisEnemy())
     margin = 50
+
+    # twee regen hartjes bij per wave
     for _ in range(2):
         x = randint(margin, background_width - margin - 32)
         y = randint(margin, background_height - margin - 32)
         hearts.append(Heart(x, y))
     
     return enemies
+
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
 minimap_timer = 0
@@ -589,7 +491,6 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
-        npc_rect = npc.get_rect()
         mini_npc_x = x + int(npc.world_x * scale_x)
         mini_npc_y = y + int(npc.world_y * scale_y)
         # Kleine rechthoek of cirkel als representatie
@@ -603,7 +504,7 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     py = y + int(player.world_y * scale_y)
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
-class Snowflake:
+
     def __init__(self):
         self.x = randint(0, screen_size[0])
         self.y = randint(-screen_size[1], 0)
@@ -655,7 +556,6 @@ class Heart:
             self.height
     )
 
-
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
@@ -663,6 +563,7 @@ def main():
     pygame.mixer.music.set_volume(0.25)
     dmg_sound = pygame.mixer.Sound('sounds/damage.mp3')
     game_over = pygame.mixer.Sound("sounds/gameover.mp3")
+    regen_sound = pygame.mixer.Sound("sounds/regen.mp3")
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
 
@@ -696,17 +597,6 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
 
-
-    snowflakes = [Snowflake() for _ in range(100)]
-    snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
-
-    minimap_update_timer = 0  
-    minimap_update_interval = 90 
-    minimap_surface = pygame.Surface(MINIMAP_SIZE)  
-
-
-    mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
-
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
@@ -714,32 +604,24 @@ def main():
             screen.blit(overlay, overlay_rect)
             pygame.display.flip()
             pygame.time.delay(int(duration * 350))
+
     running = True
     current_wave = 1
     while running:
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
-        minimap_rect = pygame.Rect(
-            MINIMAP_PADDING, 
-            screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, 
-            MINIMAP_SIZE[0], 
-            MINIMAP_SIZE[1]
-        )
 
-        player_dx = 0
-        player_dy = 0
         held = pygame.key.get_pressed()
         if held[pygame.K_RIGHT] or held[pygame.K_d]: player_dx = player.speed
         if held[pygame.K_LEFT] or held[pygame.K_q]: player_dx = -player.speed
         if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
 
-        if enemies == list():
+        if enemies == list() and current_wave <= 4:
             print("NEW WAVE STARTING")
             # toon overlay van de nieuwe wave
             next_wave_number = currentwave + 1
-            if next_wave_number <= 4:  
-                show_wave_overlay(next_wave_number)
+            show_wave_overlay(next_wave_number)
 
             currentwave += 1
             enemies = startnewave(currentwave, hearts)
@@ -755,7 +637,6 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            clicked = 0 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
@@ -851,6 +732,7 @@ def main():
         for heart in hearts[:]:
             if player_rect.colliderect(heart.get_rect()):
                 player.regen_hp(heart.amount)
+                regen_sound.play()
                 hearts.remove(heart)
         for npc in enemies:
             if player.punching or not invincible:
@@ -898,56 +780,6 @@ def main():
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player)
         draw_minimap(screen, player, enemies, hearts)
-
-        minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-        
-        snow_surface.fill((0,0,0,0))  
-        snow_surface.fill((0,0,0,0))  
-
-        if pygame.time.get_ticks() % 2 == 0:
-            for snow in snowflakes:
-                snow.update()
-        if pygame.time.get_ticks() % 2 == 0:
-            for snow in snowflakes:
-                snow.update()
-
-        for snow in snowflakes:
-            if not minimap_rect.collidepoint(snow.x, snow.y):
-                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
-        for snow in snowflakes:
-            if not minimap_rect.collidepoint(snow.x, snow.y):
-                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
-
-        screen.blit(snow_surface, (0,0))
-        screen.blit(snow_surface, (0,0))
-
-
-        screen.blit(snow_surface, (0, 0))
-
-        screen.blit(snow_surface, (0, 0))
-
-        
-        # if minimap_update_timer <= 0:
-        #     minimap_surface.fill(MINIMAP_BG_COLOR)
-        #     minimap_surface.blit(mini_bg, (0,0)) 
-        #     scale_x = MINIMAP_SIZE[0] / background_width
-        #     scale_y = MINIMAP_SIZE[1] / background_height
-        #     for npc in enemies:
-        #         mini_npc_x = int(npc.world_x * scale_x)
-        #         mini_npc_y = int(npc.world_y * scale_y)
-        #         pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-        #     for heart in hearts:
-        #         mini_x = int(heart.world_x * scale_x)
-        #         mini_y = int(heart.world_y * scale_y)
-        #     pygame.draw.circle(minimap_surface, (255, 0, 0), (mini_x, mini_y), 3)
-        #     minimap_update_timer = minimap_update_interval
-        # else:
-        #     minimap_update_timer -= 1
-        # screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
-
-        # px = MINIMAP_PADDING + int(player.world_x * scale_x)
-        # py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
-        # pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
         if player.get_hp() <= 0:
             btn = restart_button_rect()
