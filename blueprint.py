@@ -549,7 +549,7 @@ def main():
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
             player.is_moving = False
-            if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
+            if ((held[pygame.K_UP] or held[pygame.K_z]) and (held[pygame.K_RIGHT] or held[pygame.K_d])) or ((held[pygame.K_UP] or held[pygame.K_z]) and (held[pygame.K_LEFT] or held[pygame.K_q])) or ((held[pygame.K_DOWN] or held[pygame.K_s]) and (held[pygame.K_RIGHT] or held[pygame.K_d])) or ((held[pygame.K_DOWN] or held[pygame.K_s]) and (held[pygame.K_LEFT] or held[pygame.K_q])):
                 player.speed = player.base_speed / (2**(1/2))
             else:
                 player.speed = player.base_speed
