@@ -316,6 +316,13 @@ def draw_health(screen, player: Player):
 def end_game():
     return Text("background/game_over.png")
 
+def restart_button_rect():
+    return pygame.Rect(
+        screen_size[0] // 2 - 100,
+        screen_size[1] // 2 + 100,
+        200,
+        50
+    )
 
 def main():
     pygame.mixer.init()
@@ -351,6 +358,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if player.get_hp() <= 0:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if restart_button_rect().collidepoint(event.pos):
+                        main()
+                        return
+
             elif event.type == pygame.KEYDOWN:
                 if player.get_hp() > 0:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
@@ -420,6 +434,14 @@ def main():
 
         renderFrame(screen, player, enemies, text)
         draw_health(screen, player)
+
+        if player.get_hp() <= 0:
+            btn = restart_button_rect()
+            pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
+
+            txt = font.render("RESTART", True, (0,0,0))
+            screen.blit(txt, txt.get_rect(center=btn.center))
+
         flip()
 
     pygame.quit()
