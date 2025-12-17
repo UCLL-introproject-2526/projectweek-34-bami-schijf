@@ -606,12 +606,15 @@ def main():
     kills_this_wave = 0  # aantal kills in de huidige wave
     total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # totaal aantal enemies in deze wave
     enemies = startnewave(currentwave)
+# Spawn hartjes binnen veilige grenzen van de wereld
     hearts = []
-    for _ in range(2):
-            x = randint(50, background_width - 50 - 32)
-            y = randint(50, background_height - 50 - 32)
-            new_heart = Heart(x, y)
-            hearts.append(new_heart)
+    num_hearts = 2
+    margin = 50  # afstand van de randen
+    for _ in range(num_hearts):
+        x = randint(margin, background_width - margin - 32)  # 32 = hart breedte
+        y = randint(margin, background_height - margin - 32) # 32 = hart hoogte
+        new_heart = Heart(x, y)
+        hearts.append(new_heart)
 
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
@@ -648,7 +651,12 @@ def main():
             enemies = startnewave(currentwave)
             kills_this_wave = 0 
             total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # ✅ update totaal aantal enemies
-
+            # Spawn 2 nieuwe hartjes per wave
+        margin = 50  # afstand van de randen
+        for _ in range(2):
+            x = randint(margin, background_width - margin - 32)  # 32 = hart breedte
+            y = randint(margin, background_height - margin - 32) # 32 = hart hoogte
+            hearts.append(Heart(x, y))  
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
