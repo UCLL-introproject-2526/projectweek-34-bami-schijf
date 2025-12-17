@@ -204,6 +204,16 @@ class Npc:
         self.shrink_width = 22.5
         self.shrink_height = 45
         
+    def draw_shadow(self, screen):
+        shadow_width = self.width * 0.8
+        shadow_height = self.height * 0.25
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        shadow_x = screen_x + (self.width - shadow_width) / 2
+        shadow_y = screen_y + self.height - shadow_height * 0.6  # pas hier eventueel offset aan
+        shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow, (0,0,0,100), shadow.get_rect())
+        screen.blit(shadow, (shadow_x, shadow_y))
+    
     def trace(self, player: Player):
         m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
         self.world_x += m[0] * self.speed
@@ -252,14 +262,6 @@ class Zombie(Npc):
         super().__init__()
         self.image = pygame.image.load("sprites/Zombie - sprite/Zombie.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        scale = 2
-        w, h = self.image.get_size()
-        self.image = pygame.transform.scale(
-            self.image, (w * scale, h * scale)
-        )
-
-        # belangrijk: width & height mee verdubbelen
-        self.width, self.height = self.image.get_size()
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         screen.blit(self.image, (screen_x, screen_y))
@@ -338,6 +340,10 @@ def renderFrame(screen, player: Player, npcs: list, text=None):
     drawables = npcs[:] # lijst kopie
     drawables.sort(key=lambda obj: obj.world_y + obj.height)
     
+    for obj in drawables:
+        if hasattr(obj, "draw_shadow"):
+            obj.draw_shadow(screen)
+
     for obj in drawables:
         obj.draw(screen)
     
