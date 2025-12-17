@@ -486,7 +486,7 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     # positie linksonder
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
-
+    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
     # achtergrond minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
@@ -554,13 +554,12 @@ class Heart:
         )
 
     def get_rect(self):
-        shrink_w, shrink_h = 30, 40
         return pygame.Rect(
-            self.world_x + shrink_w // 2,
-            self.world_y + shrink_h // 2,
-            self.width - shrink_w,
-            self.height - shrink_h
-        )
+            self.world_x,
+            self.world_y,
+            self.width,
+            self.height
+    )
 
 
 def main():
@@ -589,10 +588,12 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave)
     hearts = []
-    for _ in range(2):  # aantal hearts op de map
-        x = randint(0, background_width - player.width)
-        y = randint(0, background_height - player.height)
-        hearts.append(Heart(x, y))
+    for _ in range(2):
+            x = randint(50, background_width - 50 - 32)
+            y = randint(50, background_height - 50 - 32)
+            new_heart = Heart(x, y)
+            hearts.append(new_heart)
+
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
 
@@ -715,7 +716,7 @@ def main():
         for npc in enemies:
             if player.punching or not invincible:
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
- 
+
                     if player.punching:
                         npc.takedamage(10)
                     else:
@@ -771,23 +772,27 @@ def main():
         screen.blit(snow_surface, (0, 0))
 
         
-        if minimap_update_timer <= 0:
-            minimap_surface.fill(MINIMAP_BG_COLOR)
-            minimap_surface.blit(mini_bg, (0,0)) 
-            scale_x = MINIMAP_SIZE[0] / background_width
-            scale_y = MINIMAP_SIZE[1] / background_height
-            for npc in enemies:
-                mini_npc_x = int(npc.world_x * scale_x)
-                mini_npc_y = int(npc.world_y * scale_y)
-                pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-            minimap_update_timer = minimap_update_interval
-        else:
-            minimap_update_timer -= 1
-        screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
+        # if minimap_update_timer <= 0:
+        #     minimap_surface.fill(MINIMAP_BG_COLOR)
+        #     minimap_surface.blit(mini_bg, (0,0)) 
+        #     scale_x = MINIMAP_SIZE[0] / background_width
+        #     scale_y = MINIMAP_SIZE[1] / background_height
+        #     for npc in enemies:
+        #         mini_npc_x = int(npc.world_x * scale_x)
+        #         mini_npc_y = int(npc.world_y * scale_y)
+        #         pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+        #     for heart in hearts:
+        #         mini_x = int(heart.world_x * scale_x)
+        #         mini_y = int(heart.world_y * scale_y)
+        #     pygame.draw.circle(minimap_surface, (255, 0, 0), (mini_x, mini_y), 3)
+        #     minimap_update_timer = minimap_update_interval
+        # else:
+        #     minimap_update_timer -= 1
+        # screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
 
-        px = MINIMAP_PADDING + int(player.world_x * scale_x)
-        py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
-        pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
+        # px = MINIMAP_PADDING + int(player.world_x * scale_x)
+        # py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
+        # pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
         if player.get_hp() <= 0:
             btn = restart_button_rect()
