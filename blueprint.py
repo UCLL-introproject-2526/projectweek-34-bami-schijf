@@ -235,12 +235,7 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
-<<<<<<< HEAD
-        self.health = 10
-        
-=======
         self.health = 1
->>>>>>> 4ed475ad5008cba5402f0d95e30270836ae91dc7
     def draw_shadow(self, screen):
         shadow_width = self.width * 0.8
         shadow_height = self.height * 0.25
@@ -302,11 +297,7 @@ class Labubu(Npc):
 class Zombie(Npc):
     def __init__(self):
         super().__init__()
-<<<<<<< HEAD
-        self.image = pygame.image.load("sprites/Zombie - sprite/Zombie - right.png").convert_alpha()
-=======
         self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
->>>>>>> 4ed475ad5008cba5402f0d95e30270836ae91dc7
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.health = 3
 
