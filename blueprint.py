@@ -21,12 +21,12 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [2,3,3],2: [1,2,1],3: [0,0,0],4: [0,0,0]}
+allenemywaves = {1: [0,0,15,0],2: [0,8,18,0],3: [5,10,15,0],4: [10,15,20,1]}
 
 
 class Player:
     def __init__(self):
-        self.__maxHp = 10
+        self.__maxHp = 15
         self.__health = self.__maxHp
         self.base_speed = 3
         self.speed = self.base_speed
@@ -100,7 +100,9 @@ class Player:
         shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
         pygame.draw.ellipse(shadow, (0, 0, 0, 100), shadow.get_rect())  # 100 = alpha
         screen.blit(shadow, (shadow_x, shadow_y))
-
+    
+    def get_maxHp(self):
+        return self.__maxHp
     def get_hp(self):
         return self.__health
 
@@ -112,7 +114,7 @@ class Player:
         if self.__health > self.__maxHp:
             self.__health = self.__maxHp
 
-    def punch(self):
+    def punch(self, invincible):
         if not self.punching:
             print("punch")
             if self.direction == "right":
@@ -120,9 +122,12 @@ class Player:
             else:
                 self.image = self.sprites["left_punch"]
             self.punching = True
-            self.punch_timer = 30   # buffer frames
+            self.punch_timer = 30   # active frames
             global punch_sound
             punch_sound.play()
+            
+            return 30
+        return invincible
 
     def up(self):
         global scroll_y
@@ -281,7 +286,7 @@ class Zombie(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 2.5
-        self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
         self.health = 3
@@ -336,7 +341,7 @@ class Boss(Npc):
         self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
-        self.health = 50
+        self.health = 25
 
     def get_rect(self):
         shrink_w, shrink_h = 80, 120
@@ -387,7 +392,7 @@ def draw_health(screen, player: Player):
     padding = 8
 
     hp_text = font.render(
-        f"HP: {player.get_hp()} / 10",
+        f"HP: {player.get_hp()} / {player.get_maxHp()}",
         True,
         (220,30,30)
     )
@@ -412,14 +417,15 @@ def restart_button_rect():
     )
 def startnewave(currentwave):
     enemies = []
-    fruit,labubu,zombie = allenemywaves[currentwave]
-    for _ in range(20):
+    fruit,labubu,zombie,boss = allenemywaves.get(currentwave)
+    for _ in range(fruit):
         enemies.append(Fruit())
     for _ in range(labubu):
         enemies.append(Labubu())
     for _ in range(zombie):
         enemies.append(Zombie())
-    enemies.append(Boss())
+    for _ in range(boss):
+        enemies.append(Boss())
     return enemies
 
 def draw_minimap(screen, player: Player, npcs: list):
@@ -483,9 +489,10 @@ def main():
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
 
+    wave_timer = 0
     foo = True
     flash_timer = 0
-    flash_duration = 5
+    flash_duration = 3
     player = Player()
     text = Text()
     invincible = False
@@ -495,8 +502,8 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave)
     
-    snowflakes = [Snowflake() for _ in range(100)]
-    snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
+    # snowflakes = [Snowflake() for _ in range(100)]
+    # snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
 
     minimap_update_timer = 0  
     minimap_update_interval = 90 
@@ -508,8 +515,9 @@ def main():
     running = True
     while running:
         if enemies == list() :
+            
             print("NEW WAVE STARTING")
-            currentwave =+ 1
+            currentwave += 1
             enemies = startnewave(currentwave)
         if isinstance(invincible, int):
             invincible -= 1
@@ -535,7 +543,7 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
-                            player.punch()
+                            invincible = player.punch(invincible)
                         text = False
                         game_start = True
 
@@ -581,15 +589,19 @@ def main():
 
         # Check collisions
         player_rect = player.get_world_rect()
-        if invincible == False:
-            for npc in enemies:
-                if npc.health <= 0 :
-                    enemies.remove(npc)
+        for npc in enemies:
+            if player.punching or not invincible:
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
-                    invincible = 60        # 2 sec iframes
-                    stunned = 10
-                    #player.take_damage(2)
-                    npc.takedamage(10)
+ 
+                    if player.punching:
+                        npc.takedamage(10)
+                    else:
+                        player.take_damage(1)
+                        invincible = 60
+                        stunned = 10
+                    
+                    if npc.health <= 0 :
+                        enemies.remove(npc)
                     dmg_sound.play()
 
                     flash_timer = flash_duration
@@ -603,6 +615,7 @@ def main():
             
                         text.y = screen_size[1] // 3
                     break
+            
         
         if player.punching:
             player.punch_timer -= 1
@@ -618,17 +631,17 @@ def main():
 
         minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
         
-        snow_surface.fill((0,0,0,0))  
+        # qsnow_surface.fill((0,0,0,0))  
 
-        if pygame.time.get_ticks() % 2 == 0:
-            for snow in snowflakes:
-                snow.update()
+        # if pygame.time.get_ticks() % 2 == 0:
+        #     for snow in snowflakes:
+        #         snow.update()
 
-        for snow in snowflakes:
-            if not minimap_rect.collidepoint(snow.x, snow.y):
-                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
+        # for snow in snowflakes:
+        #     if not minimap_rect.collidepoint(snow.x, snow.y):
+        #         pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
 
-        screen.blit(snow_surface, (0,0))
+        # screen.blit(snow_surface, (0,0))
 
 
 
@@ -661,7 +674,7 @@ def main():
             txt = font.render("RESTART", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
 
-        if flash_timer > 0:
+        if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
             overlay.set_alpha(100)
             overlay.fill((255,0,0))
