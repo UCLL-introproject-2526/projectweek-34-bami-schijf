@@ -13,6 +13,15 @@ screen_size = (1024, 768)
 
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
+
+wave_images = [
+    None,
+    None,
+    pygame.image.load("next_wave/wave 2.png").convert_alpha(),
+    pygame.image.load("next_wave/wave 3.png").convert_alpha(),
+    pygame.image.load("next_wave/wave 4.png").convert_alpha(),
+]
+
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("arialblack", 24)
@@ -626,7 +635,15 @@ def main():
 
     mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 
+    def show_wave_overlay(wave_number, duration=2):
+        if 1 <= wave_number < len(wave_images):
+            overlay = wave_images[wave_number]
+            overlay_rect = overlay.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 - 50))
+            screen.blit(overlay, overlay_rect)
+            pygame.display.flip()
+            pygame.time.delay(int(duration * 350))
     running = True
+    current_wave = 1
     while running:
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
@@ -645,12 +662,18 @@ def main():
         if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
 
-        if enemies == list() :
+        if enemies == list():
             print("NEW WAVE STARTING")
+            # toon overlay van de nieuwe wave
+            next_wave_number = currentwave + 1
+            if next_wave_number <= 4:  
+                show_wave_overlay(next_wave_number)
+
             currentwave += 1
             enemies = startnewave(currentwave, hearts)
-            kills_this_wave = 0 
-            total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # ✅ update totaal aantal enemies  
+            kills_this_wave = 0
+            total_enemies_in_wave = sum(allenemywaves.get(currentwave))
+  
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
