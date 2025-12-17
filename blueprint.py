@@ -333,6 +333,8 @@ def main():
     game_over = pygame.mixer.Sound("sounds/game_over.mp3")
 
     foo = True
+    flash_timer = 0
+    flash_duration = 5
     player = Player()
     text = Text()
     invincible = False
@@ -413,6 +415,8 @@ def main():
                     player.take_damage(2)
                     dmg_sound.play()
 
+                    flash_timer = flash_duration
+
                     print(player.get_hp())
                     if player.get_hp() <= 0 and foo:
                         text = end_game()
@@ -442,6 +446,13 @@ def main():
             txt = font.render("RESTART", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
 
+        if flash_timer > 0:
+            overlay = pygame.Surface(screen_size)
+            overlay.set_alpha(100)
+            overlay.fill((255,0,0))
+            screen.blit(overlay, (0,0))
+            flash_timer -= 1
+            
         flip()
 
     pygame.quit()
