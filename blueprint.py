@@ -511,7 +511,7 @@ def main():
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
 
-    mute_img = pygame.image.load("background/mute.png").convert_alpha()
+    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
     music_on = True
@@ -709,7 +709,7 @@ def main():
             screen.blit(overlay, (0,0))
             flash_timer -= 1
 
-        btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = aan, rood = uit
+        btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
 
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
