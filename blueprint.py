@@ -1,7 +1,7 @@
 import pygame
 import time
 from pygame.display import flip
-from random import randint
+from random import randint, choice
 
 screen_size = (1024, 768)
 
@@ -244,7 +244,15 @@ def getDir(selfCoords: tuple, playerCoords: tuple):
 class Labubu(Npc):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - gold.png").convert_alpha()
+        self.speed = 4
+        self.sprites = ("sprites\Labubu - sprite\Labubu -  pink.png",
+                        "sprites/Labubu - sprite/Labubu - dark blue.png",
+                        "sprites/Labubu - sprite/Labubu - gold.png",
+                        "sprites/Labubu - sprite/Labubu - green.png",
+                        "sprites/Labubu - sprite/Labubu - light blue.png",
+                        "sprites/Labubu - sprite/Labubu - orange.png",
+                        "sprites\Labubu - sprite\Labubu - purple.png")
+        self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.health = 8
 
@@ -265,6 +273,7 @@ class Labubu(Npc):
 class Zombie(Npc):
     def __init__(self):
         super().__init__()
+        self.speed = 2.5
         self.image = pygame.image.load("sprites/Zombie - sprite/zombie - right.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.health = 3
@@ -285,15 +294,19 @@ class Zombie(Npc):
 class Fruit(Npc):
     def __init__(self):
         super().__init__()
+        self.speed = 3.5
         self.health = 5
+        self.width = 70
+        self.sprites = ("sprites\Fruit - sprite\Apple.png",
+                        "sprites\Fruit - sprite\Banana.png",
+                        "sprites\Fruit - sprite\Cherry.png",
+                        "sprites\Fruit - sprite\Orange.png")
+        self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        pygame.draw.rect(
-            screen,
-            (0, 0, 200),
-            (screen_x, screen_y, self.width, self.height)
-        )
+        screen.blit(self.image, (screen_x, screen_y))
 
     def get_rect(self):
         shrink_w, shrink_h = 5, 10
@@ -391,7 +404,7 @@ def restart_button_rect():
 def startnewave(currentwave):
     enemies = []
     fruit,labubu,zombie = allenemywaves[currentwave]
-    for _ in range(fruit):
+    for _ in range(20):
         enemies.append(Fruit())
     for _ in range(labubu):
         enemies.append(Labubu())
