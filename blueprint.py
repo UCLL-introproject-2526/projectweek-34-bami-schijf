@@ -9,6 +9,7 @@ pygame.init()
 screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
+font = pygame.font.SysFont("arialblack", 24)
 
 background_image = pygame.image.load("background/background-map 4 (desert).png").convert()
 background_width, background_height = background_image.get_size()
@@ -295,6 +296,23 @@ def renderFrame(screen, player: Player, npcs: list, text=None):
     if text:
         text.draw(screen)
 
+def draw_health(screen, player: Player):
+    padding = 8
+
+    hp_text = font.render(
+        f"HP: {player.get_hp()} / 10",
+        True,
+        (220,30,30)
+    )
+
+    bg_rect = hp_text.get_rect(topleft=(20,20))
+    bg_rect.inflate_ip(padding*2, padding*2)
+
+    pygame.draw.rect(screen, (180,180,180), bg_rect, border_radius=6)
+
+    text_rect = hp_text.get_rect(center=bg_rect.center)
+    screen.blit(hp_text, text_rect)
+
 def end_game():
     return Text("background/game_over.png")
 
@@ -401,6 +419,7 @@ def main():
                 player.punching = False
 
         renderFrame(screen, player, enemies, text)
+        draw_health(screen, player)
         flip()
 
     pygame.quit()
