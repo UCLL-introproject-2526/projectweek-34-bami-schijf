@@ -570,11 +570,8 @@ def main():
 
     running = True
     while running:
-<<<<<<< HEAD
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
-=======
-
         minimap_rect = pygame.Rect(
             MINIMAP_PADDING, 
             screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, 
@@ -591,11 +588,7 @@ def main():
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
 
         if enemies == list() :
-<<<<<<< HEAD
->>>>>>> 76c1423a2401260a832e8658e64f09de5993a8be
-=======
             
->>>>>>> b79c73e225d1e946b9e221386d59645c23f194a2
             print("NEW WAVE STARTING")
             currentwave += 1
             enemies = startnewave(currentwave)
@@ -635,14 +628,9 @@ def main():
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
-<<<<<<< HEAD
-                        if enemies == list():
-                            cangonextwave = True
-=======
                         # start alive timer on first space press
                         if player.alive_start is None:
                             player.alive_start = time.time()
->>>>>>> 76c1423a2401260a832e8658e64f09de5993a8be
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
@@ -729,17 +717,17 @@ def main():
 
         minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
         
-        # qsnow_surface.fill((0,0,0,0))  
+        qsnow_surface.fill((0,0,0,0))  
 
-        # if pygame.time.get_ticks() % 2 == 0:
-        #     for snow in snowflakes:
-        #         snow.update()
+        if pygame.time.get_ticks() % 2 == 0:
+             for snow in snowflakes:
+                 snow.update()
 
-        # for snow in snowflakes:
-        #     if not minimap_rect.collidepoint(snow.x, snow.y):
-        #         pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
+        for snow in snowflakes:
+             if not minimap_rect.collidepoint(snow.x, snow.y):
+                 pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
 
-        # screen.blit(snow_surface, (0,0))
+        screen.blit(snow_surface, (0,0))
 
 
         screen.blit(snow_surface, (0, 0))
