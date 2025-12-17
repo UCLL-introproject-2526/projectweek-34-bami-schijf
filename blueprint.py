@@ -28,8 +28,14 @@ class Player:
         self.screen_x = screen_size[0] // 2 - self.width // 2
         self.screen_y = screen_size[1] // 2 - self.height // 2
         # World position tracks where the player is in the game world
-        self.world_x = screen_size[0] // 2
-        self.world_y = screen_size[1] // 2
+        self.world_x = background_width // 2 - self.width //2
+        self.world_y = background_height // 2 - self.height // 2
+
+        global scroll_x, scroll_y
+        scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
+        scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
+
+
         self.direction = "right"
 
         self.sprites = {
