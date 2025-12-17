@@ -13,6 +13,15 @@ screen_size = (1024, 768)
 
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
+
+wave_images = [
+    None,
+    None,
+    pygame.image.load("next_wave/wave 2.png").convert_alpha(),
+    pygame.image.load("next_wave/wave 3.png").convert_alpha(),
+    pygame.image.load("next_wave/wave 4.png").convert_alpha(),
+]
+
 pygame.display.set_caption("Fixed Game")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("arialblack", 24)
@@ -482,7 +491,7 @@ def restart_button_rect():
         50
     )
 
-def startnewave(currentwave):
+def startnewave(currentwave, hearts):
     enemies = []
     fruit,labubu,zombie,boss = allenemywaves.get(currentwave)
     for _ in range(fruit):
@@ -493,6 +502,13 @@ def startnewave(currentwave):
         enemies.append(Zombie())
     for _ in range(boss):
         enemies.append(Boss())
+        # Spawn 2 hartjes bij elke wave
+    margin = 50
+    for _ in range(2):
+        x = randint(margin, background_width - margin - 32)
+        y = randint(margin, background_height - margin - 32)
+        hearts.append(Heart(x, y))
+    
     return enemies
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -503,7 +519,7 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-
+    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
     # achtergrond minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
@@ -572,13 +588,12 @@ class Heart:
         )
 
     def get_rect(self):
-        shrink_w, shrink_h = 30, 40
         return pygame.Rect(
-            self.world_x + shrink_w // 2,
-            self.world_y + shrink_h // 2,
-            self.width - shrink_w,
-            self.height - shrink_h
-        )
+            self.world_x,
+            self.world_y,
+            self.width,
+            self.height
+    )
 
 
 def main():
@@ -595,7 +610,6 @@ def main():
     mute_img = pygame.transform.scale(mute_img, (40, 40))
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
     music_on = True
-
     foo = True
     flash_timer = 0
     flash_duration = 3
@@ -608,12 +622,11 @@ def main():
     currentwave = 1
     kills_this_wave = 0  # aantal kills in de huidige wave
     total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # totaal aantal enemies in deze wave
-    enemies = startnewave(currentwave)
-    hearts = []
-    for _ in range(2):  # aantal hearts op de map
-        x = randint(0, background_width - player.width)
-        y = randint(0, background_height - player.height)
-        hearts.append(Heart(x, y))
+    hearts = []  # start lege lijst
+    currentwave = 1
+    enemies = startnewave(currentwave, hearts)
+
+
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
 
@@ -624,7 +637,15 @@ def main():
 
     mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 
+    def show_wave_overlay(wave_number, duration=2):
+        if 1 <= wave_number < len(wave_images):
+            overlay = wave_images[wave_number]
+            overlay_rect = overlay.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 - 50))
+            screen.blit(overlay, overlay_rect)
+            pygame.display.flip()
+            pygame.time.delay(int(duration * 350))
     running = True
+    current_wave = 1
     while running:
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
@@ -643,13 +664,18 @@ def main():
         if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
 
-        if enemies == list() :
+        if enemies == list():
             print("NEW WAVE STARTING")
-            currentwave += 1
-            enemies = startnewave(currentwave)
-            kills_this_wave = 0 
-            total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # ✅ update totaal aantal enemies
+            # toon overlay van de nieuwe wave
+            next_wave_number = currentwave + 1
+            if next_wave_number <= 4:  
+                show_wave_overlay(next_wave_number)
 
+            currentwave += 1
+            enemies = startnewave(currentwave, hearts)
+            kills_this_wave = 0
+            total_enemies_in_wave = sum(allenemywaves.get(currentwave))
+  
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
@@ -741,7 +767,7 @@ def main():
         for npc in enemies:
             if player.punching or not invincible:
                 if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
- 
+
                     if player.punching:
                         npc.takedamage(10)
                     else:
@@ -802,23 +828,27 @@ def main():
         screen.blit(snow_surface, (0, 0))
 
         
-        if minimap_update_timer <= 0:
-            minimap_surface.fill(MINIMAP_BG_COLOR)
-            minimap_surface.blit(mini_bg, (0,0)) 
-            scale_x = MINIMAP_SIZE[0] / background_width
-            scale_y = MINIMAP_SIZE[1] / background_height
-            for npc in enemies:
-                mini_npc_x = int(npc.world_x * scale_x)
-                mini_npc_y = int(npc.world_y * scale_y)
-                pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-            minimap_update_timer = minimap_update_interval
-        else:
-            minimap_update_timer -= 1
-        screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
+        # if minimap_update_timer <= 0:
+        #     minimap_surface.fill(MINIMAP_BG_COLOR)
+        #     minimap_surface.blit(mini_bg, (0,0)) 
+        #     scale_x = MINIMAP_SIZE[0] / background_width
+        #     scale_y = MINIMAP_SIZE[1] / background_height
+        #     for npc in enemies:
+        #         mini_npc_x = int(npc.world_x * scale_x)
+        #         mini_npc_y = int(npc.world_y * scale_y)
+        #         pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+        #     for heart in hearts:
+        #         mini_x = int(heart.world_x * scale_x)
+        #         mini_y = int(heart.world_y * scale_y)
+        #     pygame.draw.circle(minimap_surface, (255, 0, 0), (mini_x, mini_y), 3)
+        #     minimap_update_timer = minimap_update_interval
+        # else:
+        #     minimap_update_timer -= 1
+        # screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
 
-        px = MINIMAP_PADDING + int(player.world_x * scale_x)
-        py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
-        pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
+        # px = MINIMAP_PADDING + int(player.world_x * scale_x)
+        # py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
+        # pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
         if player.get_hp() <= 0:
             btn = restart_button_rect()
