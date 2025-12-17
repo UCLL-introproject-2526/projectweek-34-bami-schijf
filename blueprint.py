@@ -6,7 +6,7 @@ from random import randint, choice, uniform
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
 MINIMAP_BG_COLOR = (50, 50, 50)
-MINIMAP_PLAYER_COLOR = (255, 0, 0)
+MINIMAP_PLAYER_COLOR = (255, 255, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
@@ -393,7 +393,7 @@ class Text:
         screen.blit(self.image, (self.x, self.y))
 
 
-def renderFrame(screen, player: Player, npcs: list, hit :hitBox , text=None):
+def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     
     drawables = npcs[:] # lijst kopie
@@ -405,7 +405,8 @@ def renderFrame(screen, player: Player, npcs: list, hit :hitBox , text=None):
 
     for obj in drawables:
         obj.draw(screen)
-    
+    for heart in hearts:
+        heart.draw(screen, scroll_x, scroll_y)
     player.draw(screen)
     if text:
         text.draw(screen)
@@ -483,8 +484,10 @@ def startnewave(currentwave):
     for _ in range(boss):
         enemies.append(Boss())
     return enemies
-
-def draw_minimap(screen, player: Player, npcs: list):
+MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
+MINIMAP_UPDATE_INTERVAL = 8
+minimap_timer = 0
+def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     # positie linksonder
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
@@ -494,8 +497,7 @@ def draw_minimap(screen, player: Player, npcs: list):
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
 
-    mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
-    screen.blit(mini_bg, (x,y))
+    screen.blit(MINIMAP_BG, (x, y))
 
     # schaal factor
     scale_x = MINIMAP_SIZE[0] / background_width
@@ -507,7 +509,10 @@ def draw_minimap(screen, player: Player, npcs: list):
         mini_npc_y = y + int(npc.world_y * scale_y)
         # Kleine rechthoek of cirkel als representatie
         pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-
+    for heart in hearts:
+        mini_x = x + int(heart.world_x * scale_x)
+        mini_y = y + int(heart.world_y * scale_y)
+        pygame.draw.circle(screen, (255, 0, 0), (mini_x, mini_y), 3)
     # speler positie
     px = x + int(player.world_x * scale_x)
     py = y + int(player.world_y * scale_y)
@@ -533,6 +538,33 @@ class Snowflake:
         if not minimap_rect.collidepoint(self.x, self.y):
             pygame.draw.circle(screen, (255,255,255), (int(self.x), int(self.y)), self.radius)
 
+class Heart:
+    def __init__(self, x, y):
+        self.world_x = x
+        self.world_y = y
+
+        self.amount = 1
+
+        self.width = 32
+        self.height = 32
+
+        self.image = pygame.image.load("sprites/Heart - sprite/heart.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+    def draw(self, screen, scroll_x, scroll_y):
+        screen.blit(
+            self.image,
+            (self.world_x - scroll_x, self.world_y - scroll_y)
+        )
+
+    def get_rect(self):
+        shrink_w, shrink_h = 30, 40
+        return pygame.Rect(
+            self.world_x + shrink_w // 2,
+            self.world_y + shrink_h // 2,
+            self.width - shrink_w,
+            self.height - shrink_h
+        )
 
 
 def main():
@@ -560,13 +592,13 @@ def main():
     game_start = False
     currentwave = 1
     enemies = startnewave(currentwave)
-    
+    hearts = []
+    for _ in range(2):  # aantal hearts op de map
+        x = randint(0, background_width - player.width)
+        y = randint(0, background_height - player.height)
+        hearts.append(Heart(x, y))
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
-
-    minimap_update_timer = 0  
-    minimap_update_interval = 60
-    minimap_surface = pygame.Surface(MINIMAP_SIZE)  
 
 
     mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
@@ -659,6 +691,10 @@ def main():
 
         # Check collisions
         player_rect = player.get_world_rect()
+        for heart in hearts[:]:
+            if player_rect.colliderect(heart.get_rect()):
+                player.regen_hp(heart.amount)
+                hearts.remove(heart)
         if invincible == False:
             for npc in enemies:
                 if npc.health <= 0 :
@@ -691,9 +727,9 @@ def main():
                     player.image = player.sprites["left"]
                 player.punching = False
 
-        renderFrame(screen, player, enemies,punchitbox, text)
+        renderFrame(screen, player, enemies, hearts, punchitbox, text)
         draw_health(screen, player)
-        draw_timer(screen, player)
+        draw_minimap(screen, player, enemies, hearts)
 
         minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
         
@@ -709,29 +745,6 @@ def main():
 
         screen.blit(snow_surface, (0,0))
 
-
-
-        if minimap_update_timer <= 0:
-            minimap_surface.fill(MINIMAP_BG_COLOR)
-            minimap_surface.blit(mini_bg, (0,0)) 
-
-            # NPC posities
-            scale_x = MINIMAP_SIZE[0] / background_width
-            scale_y = MINIMAP_SIZE[1] / background_height
-            for npc in enemies:
-                mini_npc_x = int(npc.world_x * scale_x)
-                mini_npc_y = int(npc.world_y * scale_y)
-                pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
-    
-            minimap_update_timer = minimap_update_interval
-        else:
-            minimap_update_timer -= 1
-
-        screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
-
-        px = MINIMAP_PADDING + int(player.world_x * scale_x)
-        py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
-        pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
         if player.get_hp() <= 0:
             btn = restart_button_rect()
