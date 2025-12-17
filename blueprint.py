@@ -37,6 +37,11 @@ punchitbox = None
 global cangonextwave 
 cangonextwave = True
 
+def getDir(selfCoords: tuple, playerCoords: tuple):
+    dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
+    size = (dx**2 + dy**2)**(1/2)
+    return (dx/size, dy/size)
+
 
 class Player:
     def __init__(self):
@@ -46,6 +51,7 @@ class Player:
         self.speed = self.base_speed
         self.width = 60
         self.height = 100
+        self.__weapons = set()
         # Player is always at the center of the screen
         self.screen_x = screen_size[0] // 2 - self.width // 2
         self.screen_y = screen_size[1] // 2 - self.height // 2
@@ -102,6 +108,7 @@ class Player:
         self.alive_end = None
 
 
+
     def draw(self, screen):
         self.draw_shadow(screen)
         # Always draw player at the center of the screen
@@ -124,7 +131,13 @@ class Player:
     def get_hp(self):
         return self.__health
 
-    def take_damage(self, dmg: int):
+    def take_damage(self, id: int):
+        if id == 1:
+            dmg = 1
+        elif id == 2 or id == 3:
+            dmg = 2
+        else:
+            dmg = 5
         self.__health -= dmg
     
     def regen_hp(self, regen):
@@ -241,10 +254,10 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
-        self.foo = True             # onderscheidt alle npc's van invisEnemy
+        self.hostile = True          
 
     def draw(self, screen):
-        if self.foo:
+        if self.hostile:
             screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
             screen.blit(self.image, (screen_x, screen_y))
 
@@ -259,7 +272,7 @@ class Npc:
         screen.blit(shadow, (shadow_x, shadow_y))
 
     def trace(self, player: Player):
-        if self.foo:
+        if self.hostile:
             m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
             self.world_x += m[0] * self.speed
             self.world_y += m[1] * self.speed
@@ -281,16 +294,12 @@ class Npc:
         else:
             self.health -= amount
 
-def getDir(selfCoords: tuple, playerCoords: tuple):
-    dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
-    size = (dx**2 + dy**2)**(1/2)
-    return (dx/size, dy/size)
 
 class invisEnemy(Npc):
     def __init__(self):
         super().__init__()
         self.width, self.height = 0,0
-        self.foo = False
+        self.hostile = False
 
 class Labubu(Npc):
     def __init__(self):
@@ -308,6 +317,7 @@ class Labubu(Npc):
         self.shrink_width = 30
         self.shrink_height = 40
         self.health = 8
+        self.id = 3
 
 class Zombie(Npc):
     def __init__(self):
@@ -318,12 +328,14 @@ class Zombie(Npc):
         self.shrink_width = 30
         self.shrink_height = 40
         self.health = 3
+        self.id = 1
 
 class Fruit(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 3.5
         self.health = 5
+        self.id = 2
         self.width = 70
         self.shrink_width = 5
         self.shrink_height = 10
@@ -346,6 +358,7 @@ class Boss(Npc):
         self.shrink_width = 80
         self.shrink_height = 120
         self.health = 1000
+        self.id = 4
 
 class Text:
     def __init__(self, path="background/tutorial gamecontrols.png"):
@@ -371,7 +384,7 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
             obj.draw_shadow(screen)
 
     for obj in drawables:
-        if obj.foo:         # exclude invisible enemy
+        if obj.hostile:         # exclude invisible enemy
             obj.draw(screen)
     for heart in hearts:
         heart.draw(screen, scroll_x, scroll_y)
@@ -411,11 +424,11 @@ def draw_wave_progress(screen, kills, total):
     text_rect = progress_text.get_rect(center=bg_rect.center)
     screen.blit(progress_text, text_rect)
 
-def draw_timer(screen, player: Player):
+def draw_timer(screen, player: Player, curr_wave):
     if player.alive_start is None:
         elapsed = 0
     else:
-        if player.get_hp() <= 0:
+        if player.get_hp() <= 0 or curr_wave == 5:
             # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
@@ -664,11 +677,9 @@ def main():
                         pygame.mixer.music.unpause()
                         music_on = True
 
-            if player.get_hp() <= 0:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if restart_button_rect().collidepoint(event.pos):
-                        main()
-                        return
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if restart_button_rect().collidepoint(event.pos):
+                    return main()
 
             elif event.type == pygame.KEYDOWN:
                 if player.get_hp() > 0:
@@ -742,7 +753,7 @@ def main():
                         npc.takedamage(10)
                         npc.takedamage(10)
                     else:
-                        player.take_damage(1)
+                        player.take_damage(npc.id)
                         invincible = 60
                         stunned = 10
                     
@@ -750,6 +761,7 @@ def main():
                         if npc in enemies: 
                             enemies.remove(npc)
                             kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)  # max 100%
+
 
                     dmg_sound.play()
 
@@ -778,10 +790,10 @@ def main():
         renderFrame(screen, player, enemies, hearts, punchitbox, text)
         draw_health(screen, player)
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
-        draw_timer(screen, player)
+        draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
 
-        if player.get_hp() <= 0:
+        if player.get_hp() <= 0 or currentwave == 1:
             btn = restart_button_rect()
             pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
 
