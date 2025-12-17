@@ -99,6 +99,9 @@ class Player:
         # timer: not started until first space press
         self.alive_start = None
         self.alive_end = None
+        # timer: not started until first space press
+        self.alive_start = None
+        self.alive_end = None
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -207,6 +210,8 @@ class hitBox:
         self.active = True
         self.x = 20  # even gehardcode want de player heeft geen x en y coordinaten
         self.y = 20
+        self.x = 20  # even gehardcode want de player heeft geen x en y coordinaten
+        self.y = 20
         self.player = player
         self.size = size
 
@@ -221,6 +226,24 @@ class hitBox:
         if self.time_left <= 0:
             self.active = False
             self.player.look_right()
+    def get_rect(self):
+        if self.player.direction == "right":
+            x = self.player.world_x + self.player.width
+        else:
+            x = self.player.world_x - self.size[0]
+
+        y = self.player.world_y + self.player.height // 3
+
+        return pygame.Rect(x, y, self.size[0], self.size[1])
+    
+    def draw(self, screen):
+        rect = self.get_rect()
+        screen_rect = pygame.Rect(
+            rect.x - scroll_x,
+            rect.y - scroll_y,
+            rect.width,
+            rect.height
+        )
     def get_rect(self):
         if self.player.direction == "right":
             x = self.player.world_x + self.player.width
@@ -259,6 +282,7 @@ class Npc:
         pygame.draw.ellipse(shadow, (0,0,0,100), shadow.get_rect())
         screen.blit(shadow, (shadow_x, shadow_y))
         self.health = 10
+        self.health = 10
     
     def trace(self, player: Player):
         m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
@@ -290,6 +314,7 @@ class Labubu(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 4
+        self.speed = 4
         self.sprites = ("sprites\Labubu - sprite\Labubu -  pink.png",
                         "sprites/Labubu - sprite/Labubu - dark blue.png",
                         "sprites/Labubu - sprite/Labubu - gold.png",
@@ -300,6 +325,7 @@ class Labubu(Npc):
         self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
+        self.health = 8
         self.health = 8
 
     def draw(self, screen):
@@ -398,6 +424,7 @@ class Text:
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.x = (screen_size[0] - self.width) // 2
         self.y = (screen_size[1] // 2) + 150
+        self.y = (screen_size[1] // 2) + 150
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
@@ -420,6 +447,9 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
     player.draw(screen)
     if text:
         text.draw(screen)
+
+    if hit:
+        hit.draw(screen)
 
     if hit:
         hit.draw(screen)
@@ -453,6 +483,32 @@ def draw_wave_progress(screen, kills, total):
     pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
     text_rect = progress_text.get_rect(center=bg_rect.center)
     screen.blit(progress_text, text_rect)
+
+
+def draw_timer(screen, player: Player):
+    """Draw MM:SS alive timer centered at top; pauses when player dies."""
+    if player.alive_start is None:
+        elapsed = 0
+    else:
+        if player.get_hp() <= 0:
+            # store death time once
+            if player.alive_end is None:
+                player.alive_end = time.time()
+            elapsed = int(player.alive_end - player.alive_start)
+        else:
+            # clear any previous death time when alive
+            player.alive_end = None
+            elapsed = int(time.time() - player.alive_start)
+
+    mins = elapsed // 60
+    secs = elapsed % 60
+    timer_text = f"{mins:02}:{secs:02}"
+    text_surf = font.render(timer_text, True, (255, 255, 255))
+    bg_rect = text_surf.get_rect(center=(screen_size[0] // 2, 30))
+    bg_rect.inflate_ip(8, 8)
+    pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
+    text_pos = text_surf.get_rect(center=bg_rect.center)
+    screen.blit(text_surf, text_pos)
 
 
 def draw_timer(screen, player: Player):
@@ -554,13 +610,17 @@ class Snowflake:
         self.speed = uniform(1, 3)
 
     def update(self, player_dx=0, player_dy=0):
+    def update(self, player_dx=0, player_dy=0):
         self.y += self.speed
+        self.x -= player_dx * 1.7
+        self.y -= player_dy * 1.7
         self.x -= player_dx * 1.7
         self.y -= player_dy * 1.7
         if self.y > screen_size[1]:
             self.y = randint(-50, -10)
             self.x = randint(0, screen_size[0])
             self.radius = randint(2, 6)
+            self.speed = uniform(1, 3) 
             self.speed = uniform(1, 3) 
 
     def draw(self, screen, minimap_rect):
@@ -605,6 +665,16 @@ def main():
     game_over = pygame.mixer.Sound("sounds/gameover.mp3")
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
+
+    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
+    mute_img = pygame.transform.scale(mute_img, (40, 40))
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_on = True
+
+    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
+    mute_img = pygame.transform.scale(mute_img, (40, 40))
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_on = True
 
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
@@ -695,6 +765,24 @@ def main():
                         pygame.mixer.music.unpause()
                         music_on = True
 
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if music_button_rect.collidepoint(event.pos):
+                    if music_on:
+                        pygame.mixer.music.pause()
+                        music_on = False
+                    else:
+                        pygame.mixer.music.unpause()
+                        music_on = True
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if music_button_rect.collidepoint(event.pos):
+                    if music_on:
+                        pygame.mixer.music.pause()
+                        music_on = False
+                    else:
+                        pygame.mixer.music.unpause()
+                        music_on = True
+
             if player.get_hp() <= 0:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if restart_button_rect().collidepoint(event.pos):
@@ -770,6 +858,7 @@ def main():
 
                     if player.punching:
                         npc.takedamage(10)
+                        npc.takedamage(10)
                     else:
                         player.take_damage(1)
                         invincible = 60
@@ -813,7 +902,11 @@ def main():
         minimap_rect = pygame.Rect(MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
         
         snow_surface.fill((0,0,0,0))  
+        snow_surface.fill((0,0,0,0))  
 
+        if pygame.time.get_ticks() % 2 == 0:
+            for snow in snowflakes:
+                snow.update()
         if pygame.time.get_ticks() % 2 == 0:
             for snow in snowflakes:
                 snow.update()
@@ -821,9 +914,15 @@ def main():
         for snow in snowflakes:
             if not minimap_rect.collidepoint(snow.x, snow.y):
                 pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
+        for snow in snowflakes:
+            if not minimap_rect.collidepoint(snow.x, snow.y):
+                pygame.draw.circle(snow_surface, (255,255,255), (int(snow.x), int(snow.y)), snow.radius)
 
         screen.blit(snow_surface, (0,0))
+        screen.blit(snow_surface, (0,0))
 
+
+        screen.blit(snow_surface, (0, 0))
 
         screen.blit(snow_surface, (0, 0))
 
@@ -863,6 +962,11 @@ def main():
             overlay.fill((255,0,0))
             screen.blit(overlay, (0,0))
             flash_timer -= 1
+
+        btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
+        pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
+
+        screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
