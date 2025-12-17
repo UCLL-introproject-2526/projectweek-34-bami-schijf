@@ -21,7 +21,7 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [2,3,3],2: [1,2,1],3: [0,0,0],4: [0,0,0]}
+allenemywaves = {1: [0,0,10,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
 enemies = []
 punchitbox = None
 
@@ -440,14 +440,15 @@ def restart_button_rect():
 
 def startnewave(currentwave):
     enemies = []
-    fruit,labubu,zombie = allenemywaves[currentwave]
-    for _ in range(20):
+    fruit,labubu,zombie,boss = allenemywaves[currentwave]
+    for _ in range(fruit):
         enemies.append(Fruit())
     for _ in range(labubu):
         enemies.append(Labubu())
     for _ in range(zombie):
         enemies.append(Zombie())
-    enemies.append(Boss())
+    for _ in range(boss):
+        enemies.append(Boss())
     return enemies
 
 def draw_minimap(screen, player: Player, npcs: list):
