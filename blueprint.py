@@ -134,6 +134,8 @@ class hitBox:
         self.startTime = time.time()
         self.duration = duration
         self.active = True
+        self.x = player.x
+        self.y = player.y
         self.player = player
         self.size = size
 
