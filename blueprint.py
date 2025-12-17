@@ -21,9 +21,10 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [0,0,10,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
+allenemywaves = {1: [100,100,100,0],2: [0,5,10,0],3: [5,10,15,0],4: [10,15,20,1]} # [fruit,labubu,zombie,boss]
 enemies = []
 punchitbox = None
+cangonextwave = True
 
 
 class Player:
@@ -540,7 +541,8 @@ def main():
 
     running = True
     while running:
-        if enemies == list() :
+        if enemies == list() and cangonextwave == True :
+            cangonextwave = False
             print("NEW WAVE STARTING")
             currentwave += 1
             enemies = startnewave(currentwave)
@@ -580,6 +582,8 @@ def main():
                             player.punch()
                         text = False
                         game_start = True
+                        if enemies == list():
+                            cangonextwave = True
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
