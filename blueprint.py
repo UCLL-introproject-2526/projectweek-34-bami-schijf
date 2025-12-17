@@ -511,6 +511,11 @@ def main():
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
 
+    mute_img = pygame.image.load("background/mute.png").convert_alpha()
+    mute_img = pygame.transform.scale(mute_img, (40, 40))
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_on = True
+
     foo = True
     flash_timer = 0
     flash_duration = 5
@@ -536,7 +541,7 @@ def main():
     while running:
         if enemies == list() :
             print("NEW WAVE STARTING")
-            currentwave =+ 1
+            currentwave += 1
             enemies = startnewave(currentwave)
         if isinstance(invincible, int):
             invincible -= 1
@@ -547,6 +552,15 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if music_button_rect.collidepoint(event.pos):
+                    if music_on:
+                        pygame.mixer.music.pause()
+                        music_on = False
+                    else:
+                        pygame.mixer.music.unpause()
+                        music_on = True
 
             if player.get_hp() <= 0:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -694,6 +708,11 @@ def main():
             overlay.fill((255,0,0))
             screen.blit(overlay, (0,0))
             flash_timer -= 1
+
+        btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = aan, rood = uit
+        pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
+
+        screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
             
         flip()
 
