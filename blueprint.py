@@ -3,6 +3,12 @@ import time
 from pygame.display import flip
 from random import randint
 
+MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
+MINIMAP_PADDING = 20        # afstand van schermrand
+MINIMAP_BG_COLOR = (50, 50, 50)
+MINIMAP_PLAYER_COLOR = (255, 0, 0)
+MINIMAP_BORDER_COLOR = (200, 200, 200)
+
 screen_size = (1024, 768)
 
 pygame.init()
@@ -404,6 +410,35 @@ def startnewave(currentwave):
     enemies.append(Boss())
     return enemies
 
+def draw_minimap(screen, player: Player, npcs: list):
+    # positie linksonder
+    x = MINIMAP_PADDING
+    y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
+
+    # achtergrond minimap
+    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
+    pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
+    pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
+
+    mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
+    screen.blit(mini_bg, (x,y))
+
+    # schaal factor
+    scale_x = MINIMAP_SIZE[0] / background_width
+    scale_y = MINIMAP_SIZE[1] / background_height
+
+    for npc in npcs:
+        npc_rect = npc.get_rect()
+        mini_npc_x = x + int(npc.world_x * scale_x)
+        mini_npc_y = y + int(npc.world_y * scale_y)
+        # Kleine rechthoek of cirkel als representatie
+        pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+
+    # speler positie
+    px = x + int(player.world_x * scale_x)
+    py = y + int(player.world_y * scale_y)
+    pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
+
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.mp3')
@@ -426,6 +461,10 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave)
     
+    minimap_update_timer = 0  
+    minimap_update_interval = 120 
+    minimap_surface = pygame.Surface(MINIMAP_SIZE)  
+
     running = True
     while running:
         if enemies == list() :
@@ -536,6 +575,28 @@ def main():
 
         renderFrame(screen, player, enemies, text)
         draw_health(screen, player)
+        if minimap_update_timer <= 0:
+            minimap_surface.fill(MINIMAP_BG_COLOR)
+            mini_bg = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
+            minimap_surface.blit(mini_bg, (0,0))
+
+            # NPC posities
+            scale_x = MINIMAP_SIZE[0] / background_width
+            scale_y = MINIMAP_SIZE[1] / background_height
+            for npc in enemies:
+                mini_npc_x = int(npc.world_x * scale_x)
+                mini_npc_y = int(npc.world_y * scale_y)
+                pygame.draw.rect(minimap_surface, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+    
+            minimap_update_timer = minimap_update_interval
+        else:
+            minimap_update_timer -= 1
+
+        screen.blit(minimap_surface, (MINIMAP_PADDING, screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING))
+
+        px = MINIMAP_PADDING + int(player.world_x * scale_x)
+        py = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING + int(player.world_y * scale_y)
+        pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
         if player.get_hp() <= 0:
             btn = restart_button_rect()
