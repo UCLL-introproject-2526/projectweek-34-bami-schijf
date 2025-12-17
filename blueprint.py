@@ -20,6 +20,7 @@ wave_images = [
     pygame.image.load("next_wave/wave 2.png").convert_alpha(),
     pygame.image.load("next_wave/wave 3.png").convert_alpha(),
     pygame.image.load("next_wave/wave 4.png").convert_alpha(),
+    pygame.image.load("next_wave/you win.png").convert_alpha(),
 ]
 
 pygame.display.set_caption("Fixed Game")
