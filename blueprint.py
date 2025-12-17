@@ -248,14 +248,21 @@ class Labubu(Npc):
 
 
 class Zombie(Npc):
-    def draw(self, screen):
-        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
-        pygame.draw.rect(
-            screen,
-            (0, 200, 0),
-            (screen_x, screen_y, self.width, self.height)
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("sprites/Zombie - sprite/Zombie.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        scale = 2
+        w, h = self.image.get_size()
+        self.image = pygame.transform.scale(
+            self.image, (w * scale, h * scale)
         )
 
+        # belangrijk: width & height mee verdubbelen
+        self.width, self.height = self.image.get_size()
+    def draw(self, screen):
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        screen.blit(self.image, (screen_x, screen_y))
     def get_rect(self):
         shrink_w, shrink_h = 30, 40
         return pygame.Rect(
