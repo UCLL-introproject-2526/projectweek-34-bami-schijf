@@ -85,6 +85,9 @@ class Player:
         self.image = self.sprites["right"]
         self.punching = False
         self.punch_timer = 0
+        # timer: not started until first space press
+        self.alive_start = None
+        self.alive_end = None
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -429,6 +432,32 @@ def draw_health(screen, player: Player):
     text_rect = hp_text.get_rect(center=bg_rect.center)
     screen.blit(hp_text, text_rect)
 
+
+def draw_timer(screen, player: Player):
+    """Draw MM:SS alive timer centered at top; pauses when player dies."""
+    if player.alive_start is None:
+        elapsed = 0
+    else:
+        if player.get_hp() <= 0:
+            # store death time once
+            if player.alive_end is None:
+                player.alive_end = time.time()
+            elapsed = int(player.alive_end - player.alive_start)
+        else:
+            # clear any previous death time when alive
+            player.alive_end = None
+            elapsed = int(time.time() - player.alive_start)
+
+    mins = elapsed // 60
+    secs = elapsed % 60
+    timer_text = f"{mins:02}:{secs:02}"
+    text_surf = font.render(timer_text, True, (255, 255, 255))
+    bg_rect = text_surf.get_rect(center=(screen_size[0] // 2, 30))
+    bg_rect.inflate_ip(8, 8)
+    pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
+    text_pos = text_surf.get_rect(center=bg_rect.center)
+    screen.blit(text_surf, text_pos)
+
 def end_game():
     return Text("background/game_over.png")
 
@@ -599,6 +628,9 @@ def main():
                             player.punch()
                         text = False
                         game_start = True
+                        # start alive timer on first space press
+                        if player.alive_start is None:
+                            player.alive_start = time.time()
 
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
@@ -676,6 +708,7 @@ def main():
 
         renderFrame(screen, player, enemies,punchitbox, text)
         draw_health(screen, player)
+        draw_timer(screen, player)
 
         snow_surface.fill((0, 0, 0, 0))
 
