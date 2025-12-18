@@ -371,15 +371,12 @@ class Projectile():
         self.height = 75
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-<<<<<<< HEAD
         self.lifespan = 60
-=======
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
@@ -574,8 +571,6 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
     screen.blit(text_surf, text_pos)
 
 
-<<<<<<< HEAD
-=======
 def draw_highscore_left(screen, highscore):
     # linksboven onder wave progress
     hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
@@ -588,7 +583,6 @@ def draw_highscore_left(screen, highscore):
 
 
 
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 def end_game():
     return Text("background/game_over.png")
 
@@ -744,20 +738,20 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
 
 class Snowflake:
     def __init__(self):
-        self.x = randint(0, screen_size[0])
-        self.y = randint(-screen_size[1], 0)
+        self.x = randint(0, screen_size[0]) # start x-positie willekeurig over de volledige schermbreedte
+        self.y = randint(-screen_size[1], 0) # start y-positie boven het scherm
         self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
-        self.speed = uniform(1, 3)
+        self.speed = uniform(1, 3) #valsnelheid van sneeuw, kleine variaties voor realistisch effect
 
     def update(self, player_dx=0, player_dy=0):
-        self.y += self.speed
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
+        self.y += self.speed # sneeuwvlok valt verticaal naar beneden
+        self.x -= player_dx * 1.7 # parallax-effect, speler beweegt tegen de sneeuw in
+        self.y -= player_dy * 1.7 # parallax-effect, speler beweegt tegen de sneeuw in
         if self.y > screen_size[1]:
-            self.y = randint(-50, -10)
+            self.y = randint(-50, -10) # opnieuw boven het scherm
             self.x = randint(0, screen_size[0])
-            self.radius = randint(2, 6)
-            self.speed = uniform(1, 3) 
+            self.radius = randint(2, 6) # nieuwe grootte
+            self.speed = uniform(1, 3)  # nieuwe snelheid
 
     def draw(self, screen, minimap_rect):
         # alleen tekenen als het niet over de minimap valt
@@ -824,8 +818,6 @@ def main():
     projectiles = []
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
-<<<<<<< HEAD
-=======
     pen_time = 0
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
@@ -836,7 +828,6 @@ def main():
     except FileNotFoundError:
         highscore = 0
 
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
@@ -1114,15 +1105,12 @@ def main():
             txt = font.render("RESTART", True, (0,0,0))
             txt2 = font.render("CONTINUE", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
-<<<<<<< HEAD
             screen.blit(txt2, txt2.get_rect(center=btn2.center))
-=======
             # MAIN MENU button under restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
             main_txt = font.render("MAIN MENU", True, (0,0,0))
             screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 
         if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
@@ -1140,12 +1128,12 @@ def main():
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
-        snow_surface.fill((0, 0, 0, 0))
-        for snow in snowflakes:
-            snow.update(player_dx, player_dy)
+        snow_surface.fill((0, 0, 0, 0)) # transparante laag waarover ik de sneeuw wil plaatsen
+        for snow in snowflakes: # loop door alle sneeuw
+            snow.update(player_dx, player_dy) # parallax-effect wanneer speler beweegt
             snow.draw(snow_surface, MINIMAP_RECT)
 
-        screen.blit(snow_surface, (0, 0))
+        screen.blit(snow_surface, (0, 0)) # teken sneeuw op transparante sneeuwlaag
 
         flip()
 
