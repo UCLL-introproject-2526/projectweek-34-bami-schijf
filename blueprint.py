@@ -3,7 +3,7 @@ import time
 import sys
 from pygame.display import flip
 from random import randint, choice, uniform
-from math import inf
+from math import inf, asin
 
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
@@ -215,6 +215,11 @@ class Player:
     def look_right(self):
         self.direction = "right"
 
+    def add_weapon(self, weapon: str):
+        self.__weapons.add(weapon)
+    def has_weapon(self, weapon: str):
+        return weapon in self.__weapons
+
     def update_image(self):
         if self.punching:
             # toon punch animatie, wordt automatisch gereset in main loop
@@ -317,7 +322,7 @@ class Npc:
 
     def trace(self, player: Player):
         if self.hostile:
-            m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
+            m = getDir((self.world_x - self.width // 2, self.world_y - self.width // 2), (player.world_x - player.width // 2, player.world_y - player.height // 2))
             self.world_x += m[0] * self.speed
             self.world_y += m[1] * self.speed
 
@@ -341,12 +346,17 @@ class Npc:
 class Projectile():
     def __init__(self,player : Player,enemy : Npc):
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
-        self.world_x = player.world_x
-        self.world_y = player.world_y
-        self.width = 30
-        self.height = 30
-        self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
+        print(self.dir)
+        self.world_x = player.world_x - player.width // 2
+        self.world_y = player.world_y - player.height // 2
+        self.width = 75
+        self.height = 75
+        self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if player.world_x < enemy.world_x:
+            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
+        else:
+            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
         self.speed = 10
         self.hasCollided = False
@@ -786,7 +796,7 @@ def main():
     projectiles = []
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
-
+    pen_time = 0
     # Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
@@ -809,7 +819,6 @@ def main():
 
     current_wave = 1
     while running:
-
         player_dx = 0
         player_dy = 0  
 
@@ -872,9 +881,26 @@ def main():
 
             currentwave += 1
             enemies = startnewave(currentwave, hearts)
+            if currentwave == 2:
+                player.add_weapon("pen")
+            elif current_wave == 3:
+                player.add_weapon("pine")
+            elif current_wave == 4:
+                player.add_weapon("PPAP")
+
             kills_this_wave = 0
             total_enemies_in_wave = sum(allenemywaves.get(currentwave))
   
+        if player.has_weapon("pen"):
+            if pen_time <= 0:
+                pen_time = 60
+                near = player.get_nearest_enemy(enemies)
+                if not near is None:
+                    projectiles.append(Projectile(player,near))
+                    print("added projectile")
+            else:
+                pen_time -= 1
+
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
@@ -928,10 +954,6 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
-                            near = player.get_nearest_enemy(enemies)
-                            if not near is None:
-                                projectiles.append(Projectile(player,near))
-                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
