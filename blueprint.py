@@ -325,7 +325,7 @@ class Npc:
             self.health -= amount
 
 class Projectile():
-    def __init__(self,player : Player,enemy : Npc):
+    def __init__(self, player: Player, enemy: Npc):
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
         self.world_x = player.world_x
         self.world_y = player.world_y
@@ -343,10 +343,18 @@ class Projectile():
         if self.lifespan <= 0 or self.hasCollided:
             return False
         return True
-    
+    def get_screen_pos(self):
+        return (self.world_x - scroll_x, self.world_y - scroll_y)
+
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         screen.blit(self.image, (screen_x, screen_y))
+    
+    def handle(self):
+        self.goDir()
+        self.checkforlife()
+        self.draw()
+
     
 
 class invisEnemy(Npc):
@@ -526,7 +534,7 @@ def startnewave(currentwave, hearts):
         enemies.append(Boss())
     for _ in range(invis_enemy):
         enemies.append(invisEnemy())
-    margin = screen_size[0] // 2
+    margin = 50
 
     # twee regen hartjes bij per wave
     for _ in range(2):
