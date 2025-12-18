@@ -545,7 +545,7 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
 
 def draw_highscore_left(screen, highscore):
     # linksboven onder wave progress
-    hs_text = font.render(f"Highscore: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
+    hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
     # linksboven onder wave progress: stel wave progress start op y=80
     bg_rect = hs_text.get_rect(topleft=(15, 133))  # 15 px van links, 120 px van boven
     bg_rect.inflate_ip(8, 8)
