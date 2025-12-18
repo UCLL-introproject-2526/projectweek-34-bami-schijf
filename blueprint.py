@@ -543,6 +543,18 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
     screen.blit(text_surf, text_pos)
 
 
+def draw_highscore_left(screen, highscore):
+    # linksboven onder wave progress
+    hs_text = font.render(f"Highscore: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
+    # linksboven onder wave progress: stel wave progress start op y=80
+    bg_rect = hs_text.get_rect(topleft=(15, 133))  # 15 px van links, 120 px van boven
+    bg_rect.inflate_ip(8, 8)
+    pygame.draw.rect(screen, (50,50,50), bg_rect, border_radius=6)
+    text_rect = hs_text.get_rect(center=bg_rect.center)
+    screen.blit(hs_text, text_rect)
+
+
+
 def end_game():
     return Text("background/game_over.png")
 
@@ -664,6 +676,7 @@ class Heart:
             self.height
     )
 
+
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.ogg')
@@ -706,6 +719,14 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
 
+    # Lees highscore bij start
+    try:
+        with open("highscore.txt", "r") as f:
+            highscore = int(f.read())
+    except FileNotFoundError:
+        highscore = 0
+
+
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
@@ -722,7 +743,7 @@ def main():
     while running:
 
         player_dx = 0
-        player_dy = 0
+        player_dy = 0  
 
         if paused:
             # Render huidig frame
@@ -730,6 +751,7 @@ def main():
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
+            draw_highscore_left(screen, highscore) # toon highscore
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
@@ -745,7 +767,7 @@ def main():
             pygame.display.flip() # update scherm
             clock.tick(60) #framerate behouden
 
-    # Event-loop voor pauze
+        # Event-loop voor pauze
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
                     running = False
@@ -928,7 +950,18 @@ def main():
                         pygame.mixer.music.stop()
                         game_over.play()
                         foo = not foo
-            
+
+                        # bereken elapsed tijd
+                        player.alive_end = time.time()
+                        elapsed_time = int(player.alive_end - player.alive_start)
+
+                        # update highscore als het beter is
+                        if elapsed_time > highscore:
+                            highscore = elapsed_time
+                            with open("highscore.txt", "w") as f:
+                                f.write(str(highscore))
+
+
                         text.y = screen_size[1] // 3
                     break
             
@@ -947,6 +980,7 @@ def main():
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
+        draw_highscore_left(screen, highscore)
 
         if player.get_hp() <= 0 or currentwave == 5:
             btn = restart_button_rect()
