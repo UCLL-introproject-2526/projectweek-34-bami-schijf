@@ -2,7 +2,6 @@ import pygame
 import time
 from pygame.display import flip
 from random import randint, choice, uniform
-from math import inf
 
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
@@ -38,12 +37,9 @@ punchitbox = None
 global cangonextwave 
 cangonextwave = True
 
-def distanceSquared(dx: int, dy:int):
-    return dx**2 + dy**2
-
 def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
-    size = distanceSquared(dx, dy)**(1/2)
+    size = (dx**2 + dy**2)**(1/2)
     return (dx/size, dy/size)
 
 
@@ -111,15 +107,7 @@ class Player:
         self.alive_start = None
         self.alive_end = None
 
-    def getNearestEnemy(self, enemies: list):
-        min = inf
-        nearest = None
-        for enemy in enemies:
-            temp = distanceSquared(self.world_x - enemy.world_x, self.world_y - enemy.world_y)
-            if temp < min:
-                min = temp
-                nearest = enemy
-        return nearest
+
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -151,8 +139,6 @@ class Player:
         else:
             dmg = 5
         self.__health -= dmg
-        if self.__health < 0:
-            self.__health = 0
     
     def regen_hp(self, regen):
         self.__health += regen
@@ -333,6 +319,7 @@ class Projectile():
         self.lifespan = 100
         self.speed = 10
         self.hasCollided = False
+
 
     def goDir(self):
         self.world_x += self.speed * self.dir[0]
@@ -744,6 +731,7 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
+                            projectiles.append(Projectile(player,player.get_nearest_enemy(enemies)))
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
