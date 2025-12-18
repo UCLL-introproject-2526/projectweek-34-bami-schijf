@@ -1114,7 +1114,7 @@ def main():
             for projectile in projectiles:
                 if projectile.isPen and not projectile.hasCollided:
                     if projectile.get_rect().colliderect(npc_rect):
-                        npc.takedamage(0)    # pen damage
+                        npc.takedamage(50)    # pen damage
                         projectile.hasCollided = True
                         dmg_sound.play()
                 #   voeg ananas toe met splash dmg
