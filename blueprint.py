@@ -346,7 +346,7 @@ class Projectile():
         self.height = 30
         self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.lifespan = 60
+        self.lifespan = 30
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
@@ -405,7 +405,7 @@ class Labubu(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 30
         self.shrink_height = 40
-        self.health = 8
+        self.health = 155
         self.id = 3
 
 class Zombie(Npc):
@@ -423,7 +423,7 @@ class Fruit(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 3.5
-        self.health = 5
+        self.health = 105
         self.id = 2
         self.width = 70
         self.shrink_width = 5
