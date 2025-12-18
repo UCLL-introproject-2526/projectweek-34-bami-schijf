@@ -43,7 +43,7 @@ background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
 #allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -342,7 +342,7 @@ class Npc:
 
     def trace(self, player: Player):
         if self.hostile:
-            m = getDir((self.world_x - self.width // 2, self.world_y - self.width // 2), (player.world_x - player.width // 2, player.world_y - player.height // 2))
+            m = getDir((self.world_x + self.width // 2, self.world_y), (player.world_x, player.world_y - self.height // 2))
             self.world_x += m[0] * self.speed
             self.world_y += m[1] * self.speed
 
@@ -365,18 +365,18 @@ class Npc:
 
 class Projectile():
     def __init__(self,player : Player,enemy : Npc):
-        self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
-        print(self.dir)
+        
         self.world_x = player.world_x - player.width // 2
         self.world_y = player.world_y - player.height // 2
         self.width = 75
         self.height = 75
+        self.dir = getDir((self.world_x + self.width // 2, self.world_y - self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
+        print(self.dir)
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
-        
         if player.world_x < enemy.world_x:
-            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
+            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90 + 90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
@@ -967,10 +967,11 @@ def main():
             kills_this_wave = 0
             total_enemies_in_wave = sum(allenemywaves.get(currentwave, [0,0,0,0,0]))
   
-        if player.has_weapon("pen"):
+        if player.get_hp() > 0 and player.has_weapon("pen"):
             if pen_time <= 0:
                 pen_time = 60
                 near = player.get_nearest_enemy(enemies)
+                # geen error bij None want leest van links naar rechts
                 if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 400**2:
                     projectiles.append(Projectile(player,near))
                     print("added projectile")
@@ -1034,10 +1035,6 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
-                            near = player.get_nearest_enemy(enemies)
-                            if not near is None:
-                                projectiles.append(Projectile(player,near))
-                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
@@ -1101,6 +1098,7 @@ def main():
                     if projectile.get_rect().colliderect(npc_rect):
                         npc.takedamage(50)    # pen damage
                         projectile.hasCollided = True
+                        dmg_sound.play()
                 #   voeg ananas toe met splash dmg
                 if npc.health <= 0:
                         if npc in enemies: 
