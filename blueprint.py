@@ -1,8 +1,9 @@
 import pygame
 import time
+import sys
 from pygame.display import flip
 from random import randint, choice, uniform
-from math import inf
+from math import inf, asin
 
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
@@ -219,6 +220,11 @@ class Player:
     def look_right(self):
         self.direction = "right"
 
+    def add_weapon(self, weapon: str):
+        self.__weapons.add(weapon)
+    def has_weapon(self, weapon: str):
+        return weapon in self.__weapons
+
     def update_image(self):
         punch_width = 75
         punch_height = 102
@@ -326,7 +332,7 @@ class Npc:
 
     def trace(self, player: Player):
         if self.hostile:
-            m = getDir((self.world_x, self.world_y), (player.world_x, player.world_y))
+            m = getDir((self.world_x - self.width // 2, self.world_y - self.width // 2), (player.world_x - player.width // 2, player.world_y - player.height // 2))
             self.world_x += m[0] * self.speed
             self.world_y += m[1] * self.speed
 
@@ -350,12 +356,17 @@ class Npc:
 class Projectile():
     def __init__(self,player : Player,enemy : Npc):
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
-        self.world_x = player.world_x
-        self.world_y = player.world_y
-        self.width = 30
-        self.height = 30
-        self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
+        print(self.dir)
+        self.world_x = player.world_x - player.width // 2
+        self.world_y = player.world_y - player.height // 2
+        self.width = 75
+        self.height = 75
+        self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if player.world_x < enemy.world_x:
+            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
+        else:
+            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
         self.speed = 10
         self.hasCollided = False
@@ -576,6 +587,15 @@ def restart_button_rect():
         50
     )
 
+
+def main_menu_button_rect():
+    return pygame.Rect(
+        screen_size[0] // 2 - 100,
+        screen_size[1] // 2 + 160,
+        200,
+        50
+    )
+
 def startnewave(currentwave, hearts):
     enemies = []
     fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave)
@@ -598,6 +618,72 @@ def startnewave(currentwave, hearts):
         hearts.append(Heart(x, y))
     
     return enemies
+
+
+def main_menu():
+    menu_clock = pygame.time.Clock()
+    btn_font = pygame.font.SysFont("arialblack", 36)
+    play_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 - 40, 200, 50)
+    quit_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 + 30, 200, 50)
+    # try to load background image for main menu; fallback to solid fill
+    try:
+        menu_bg = pygame.image.load("background/Main menu.png").convert()
+        menu_bg = pygame.transform.smoothscale(menu_bg, screen_size)
+    except Exception:
+        menu_bg = None
+
+    while True:
+        mpos = pygame.mouse.get_pos()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if play_rect.collidepoint(event.pos):
+                    return True
+                if quit_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    return False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    return False
+                if event.key == pygame.K_RETURN:
+                    return True
+
+        # background
+        if menu_bg:
+            screen.blit(menu_bg, (0, 0))
+        else:
+            screen.fill((20, 20, 40))
+
+        # draw semi-transparent buttons so they blend with background
+        for rect, label in ((play_rect, "PLAY"), (quit_rect, "QUIT")):
+            hover = rect.collidepoint(mpos)
+            btn_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+            base_alpha = 200 if hover else 140
+            btn_surf.fill((10, 10, 10, base_alpha))
+            pygame.draw.rect(btn_surf, (255,255,255,60), btn_surf.get_rect(), 2, border_radius=10)
+            screen.blit(btn_surf, rect.topleft)
+            txt = btn_font.render(label, True, (240, 240, 240) if not hover else (20,20,20))
+            screen.blit(txt, txt.get_rect(center=rect.center))
+
+        pygame.display.flip()
+        menu_clock.tick(60)
+
+
+def draw_menu_button(surface, rect, hover=False):
+    bg = (210, 210, 210) if not hover else (190, 190, 190)
+    line_color = (30, 30, 30)
+    pygame.draw.rect(surface, bg, rect, border_radius=8)
+    # draw three horizontal lines for a cleaner 'menu' icon
+    cx, cy = rect.center
+    line_w = int(rect.width * 0.45)
+    spacing = 6
+    start_x = cx - line_w // 2
+    for offset in (-spacing, 0, spacing):
+        y = cy + offset
+        pygame.draw.line(surface, line_color, (start_x, y), (start_x + line_w, y), 3)
 
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -700,17 +786,9 @@ def main():
 
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
-    music_on = True
-
-    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
-    mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
-    music_on = True
-
-    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
-    mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40)
+    menu_button_rect = pygame.Rect(screen_size[0] - 110, 20, 40, 40)
+    small_font = pygame.font.SysFont("arialblack", 20)
     music_on = True
     foo = True
     flash_timer = 0
@@ -728,7 +806,7 @@ def main():
     projectiles = []
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
-
+    pen_time = 0
     # Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
@@ -751,7 +829,6 @@ def main():
 
     current_wave = 1
     while running:
-
         player_dx = 0
         player_dy = 0  
 
@@ -765,7 +842,10 @@ def main():
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
-            # Teken mute-knop ook tijdens pauze
+            # Teken mute-knop ook tijdens pauze + menu knop
+            mpos = pygame.mouse.get_pos()
+            hover = menu_button_rect.collidepoint(mpos)
+            draw_menu_button(screen, menu_button_rect, hover=hover)
             btn_color = (100, 220, 100) if music_on else (220, 100, 100)
             pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
             screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
@@ -780,8 +860,8 @@ def main():
         # Event-loop voor pauze
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
-                    running = False
-                    paused = False
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -811,9 +891,26 @@ def main():
 
             currentwave += 1
             enemies = startnewave(currentwave, hearts)
+            if currentwave == 2:
+                player.add_weapon("pen")
+            elif current_wave == 3:
+                player.add_weapon("pine")
+            elif current_wave == 4:
+                player.add_weapon("PPAP")
+
             kills_this_wave = 0
             total_enemies_in_wave = sum(allenemywaves.get(currentwave))
   
+        if player.has_weapon("pen"):
+            if pen_time <= 0:
+                pen_time = 60
+                near = player.get_nearest_enemy(enemies)
+                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 400**2:
+                    projectiles.append(Projectile(player,near))
+                    print("added projectile")
+            else:
+                pen_time -= 1
+
         if isinstance(invincible, int):
             invincible -= 1
             if invincible <= 0:
@@ -826,7 +923,8 @@ def main():
             
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
@@ -835,6 +933,12 @@ def main():
                     else:
                         pygame.mixer.music.unpause()
                         music_on = True
+                if menu_button_rect.collidepoint(event.pos):
+                    pygame.mixer.music.stop()
+                    return
+                if main_menu_button_rect().collidepoint(event.pos):
+                    pygame.mixer.music.stop()
+                    return
                 if restart_button_rect().collidepoint(event.pos):
                     return main()
 
@@ -860,10 +964,6 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
-                            near = player.get_nearest_enemy(enemies)
-                            if not near is None:
-                                projectiles.append(Projectile(player,near))
-                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
@@ -998,6 +1098,11 @@ def main():
 
             txt = font.render("RESTART", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
+            # MAIN MENU button under restart
+            main_btn = main_menu_button_rect()
+            pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
+            main_txt = font.render("MAIN MENU", True, (0,0,0))
+            screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
 
         if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
@@ -1006,19 +1111,24 @@ def main():
             screen.blit(overlay, (0,0))
             flash_timer -= 1
 
+        # draw menu button (with hover) and music button
+        mpos = pygame.mouse.get_pos()
+        hover = menu_button_rect.collidepoint(mpos)
+        draw_menu_button(screen, menu_button_rect, hover=hover)
+
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
-
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
-        btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
-        pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
-
-        screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
-            
         flip()
 
-    pygame.quit()
+    # do not quit here; let the top-level block control quitting
 
 if __name__ == "__main__":
-    main()
+    while True:
+        start = main_menu()
+        if start:
+            main()
+        else:
+            break
+    pygame.quit()
