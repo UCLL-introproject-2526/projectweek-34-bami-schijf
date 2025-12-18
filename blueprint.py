@@ -555,20 +555,19 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
             # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
-                elapsed_time = int(player.alive_end - player.alive_start)
-
-                # Alleen bij hogere wave, of zelfde wave maar langere tijd
+            
+            elapsed_time = int(player.alive_end - player.alive_start)  # altijd definiëren
+            
+            # Alleen bij hogere wave, of zelfde wave maar langere tijd
             if curr_wave > highscore[0] or (curr_wave == highscore[0] and elapsed_time > highscore[1]):
                 highscore = (curr_wave, elapsed_time)
                 with open("highscore.txt", "w") as f:
                     f.write(f"{highscore[0]},{highscore[1]}")
-
-
-            elapsed = int(player.alive_end - player.alive_start) if player.alive_end else 0
+            
+            elapsed = elapsed_time
         else:
             now = time.time()
             if paused and pause_start_time is not None:
-                # stop de timer tijdens pauze
                 elapsed = int(pause_start_time - player.alive_start)
             else:
                 elapsed = int(now - player.alive_start)
