@@ -42,8 +42,8 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-#allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+#allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -627,7 +627,6 @@ def continue_button_rect():
         50
     )
 
-
 def main_menu_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
@@ -750,37 +749,43 @@ def remove_highscore_file():
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
 minimap_timer = 0
+
 def draw_minimap(screen, player: Player, npcs: list, hearts: list):
-    # positie linksonder
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-    # achtergrond minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
-
-
     screen.blit(MINIMAP_BG, (x, y))
 
-    # schaal factor
     scale_x = MINIMAP_SIZE[0] / background_width
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
-        mini_npc_x = x + int(npc.world_x * scale_x)
-        mini_npc_y = y + int(npc.world_y * scale_y)
-        # Kleine rechthoek of cirkel als representatie
-        pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+        mini_x = x + int(npc.world_x * scale_x)
+        mini_y = y + int(npc.world_y * scale_y)
+
+        if isinstance(npc, Boss):
+            radius = 6  # groter voor Boss
+            color = (0, 0, 255)  # blauw
+        else:
+            radius = 3  # normale vijanden
+            color = (0, 200, 0)  # groen
+
+        pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
+
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
         mini_y = y + int(heart.world_y * scale_y)
         pygame.draw.circle(screen, (255, 0, 0), (mini_x, mini_y), 3)
+
     # speler positie
     px = x + int(player.world_x * scale_x)
     py = y + int(player.world_y * scale_y)
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
+
+
 
 class Snowflake:
     def __init__(self):
@@ -948,6 +953,7 @@ def main():
                         if player.alive_start is not None and pause_start_time is not None:
                             pause_duration = time.time() - pause_start_time
                             player.alive_start += pause_duration
+            continue
 
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
@@ -1021,11 +1027,12 @@ def main():
                 if restart_button_rect().collidepoint(event.pos):
                     return main()
                 if continue_button_rect().collidepoint(event.pos):
-                    print("CONTINUE ON ")
-                    enemies = list()
-                    currentwave = 6
-                    cangonextwave = True
-                    text = None
+                    if player.get_hp() > 0:
+                        print("CONTINUE ON ")
+                        enemies = list()
+                        currentwave = 6
+                        cangonextwave = True
+                        text = None
             elif event.type == pygame.KEYDOWN:
                 
                 if event.key == pygame.K_ESCAPE:
