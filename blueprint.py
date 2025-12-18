@@ -13,6 +13,13 @@ MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
 
+MINIMAP_RECT = pygame.Rect(
+    MINIMAP_PADDING,
+    screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING,
+    MINIMAP_SIZE[0],
+    MINIMAP_SIZE[1]
+)
+
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
 
@@ -720,7 +727,7 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     py = y + int(player.world_y * scale_y)
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
-
+class Snowflake:
     def __init__(self):
         self.x = randint(0, screen_size[0])
         self.y = randint(-screen_size[1], 0)
@@ -731,13 +738,10 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
         self.y += self.speed
         self.x -= player_dx * 1.7
         self.y -= player_dy * 1.7
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
         if self.y > screen_size[1]:
             self.y = randint(-50, -10)
             self.x = randint(0, screen_size[0])
             self.radius = randint(2, 6)
-            self.speed = uniform(1, 3) 
             self.speed = uniform(1, 3) 
 
     def draw(self, screen, minimap_rect):
@@ -807,6 +811,8 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
     pen_time = 0
+    snowflakes = [Snowflake() for _ in range(100)]
+    snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
@@ -1119,6 +1125,13 @@ def main():
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
+
+        snow_surface.fill((0, 0, 0, 0))
+        for snow in snowflakes:
+            snow.update(player_dx, player_dy)
+            snow.draw(snow_surface, MINIMAP_RECT)
+
+        screen.blit(snow_surface, (0, 0))
 
         flip()
 
