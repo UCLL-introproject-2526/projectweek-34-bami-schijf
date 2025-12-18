@@ -749,37 +749,43 @@ def remove_highscore_file():
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
 minimap_timer = 0
+
 def draw_minimap(screen, player: Player, npcs: list, hearts: list):
-    # positie linksonder
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-    # achtergrond minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
-
-
     screen.blit(MINIMAP_BG, (x, y))
 
-    # schaal factor
     scale_x = MINIMAP_SIZE[0] / background_width
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
-        mini_npc_x = x + int(npc.world_x * scale_x)
-        mini_npc_y = y + int(npc.world_y * scale_y)
-        # Kleine rechthoek of cirkel als representatie
-        pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+        mini_x = x + int(npc.world_x * scale_x)
+        mini_y = y + int(npc.world_y * scale_y)
+
+        if isinstance(npc, Boss):
+            radius = 6  # groter voor Boss
+            color = (0, 0, 255)  # blauw
+        else:
+            radius = 3  # normale vijanden
+            color = (0, 200, 0)  # groen
+
+        pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
+
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
         mini_y = y + int(heart.world_y * scale_y)
         pygame.draw.circle(screen, (255, 0, 0), (mini_x, mini_y), 3)
+
     # speler positie
     px = x + int(player.world_x * scale_x)
     py = y + int(player.world_y * scale_y)
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
+
+
 
 class Snowflake:
     def __init__(self):
