@@ -176,26 +176,39 @@ class Player:
 
     def up(self):
         global scroll_y
+        # verplaats de speler in wereldcoördinaten omhoog
         self.world_y -= self.speed
+        # zorg dat de speler niet buiten de boven- of onderkant van de wereld gaat
         self.world_y = max(0, min(self.world_y, background_height - self.height))
+        # pas de scroll aan zodat de speler in het midden van het scherm blijft
+        # scroll_y bepaalt welk deel van de achtergrond zichtbaar is
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def down(self):
         global scroll_y
+        # verplaats de speler in de wereldcoördinaten naar beneden
         self.world_y += self.speed
+        # limiteer zodat de speler niet buiten de achtergrond beweegt
         self.world_y = max(0, min(self.world_y, background_height - self.height))
+        # scroll de achtergrond naar beneden om speler in het midden te houden
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def left(self):
         global scroll_x
+        # verplaats speler naar links in wereldcoördinaten 
         self.world_x -= self.speed
+        # limiteer zodat speler niet buiten de linker- of rechterkant van de wereld komt
         self.world_x = max(0, min(self.world_x, background_width - self.width))
+        # scroll de achtergrond horizontaal om speler in het midden te houden
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def right(self):
         global scroll_x
+        # verplaats de speler naar rechts in wereldcoördinaten 
         self.world_x += self.speed
+        # limiteer zodat speler niet buiten de rechterkant van de wereld komt
         self.world_x = max(0, min(self.world_x, background_width - self.width))
+        # scroll de achtergrond horizontaal om speler in het midden van het scherm te houden
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def look_left(self):
