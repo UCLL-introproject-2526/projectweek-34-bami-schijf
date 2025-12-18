@@ -42,8 +42,8 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-#allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+#allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -383,6 +383,8 @@ class Projectile():
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
+        self.isPineapple = False
+        self.isShrapnel = False
 
     def goDir(self):
         self.world_x += self.speed * self.dir[0]
@@ -413,6 +415,44 @@ class Projectile():
             self.width,
             self.height
     )
+
+class Pineapple(Projectile):
+    def __init__(self, player, enemy):
+        super().__init__(player, enemy)
+        self.isPen = False
+        self.isPineapple = True
+        self.image = pygame.image.load("sprites\Projectile - sprite/pineapple.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0])) + 90
+        self.image = pygame.transform.rotate(self.image,self.angle)
+
+    def explode(self):
+        res = []
+        for i in range(8):
+            res.append(Shrapnel((self.world_x - self.width // 2, self.world_y + self.height // 2), math.radians(i*360/8)))
+        return res
+
+class Shrapnel(Projectile):
+    def __init__(self, coords: tuple, angle: float):
+        self.dir = (math.cos(angle), math.sin(angle))
+        self.world_x = coords[0]
+        self.world_y = coords[1]
+        self.lifespan = 10
+        self.width = 5
+        self.height = 5
+        self.speed = 10
+        self.image = pygame.image.load("sprites\Projectile - sprite/shrapnel.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.isPen = False
+        self.isPineapple = False
+        self.isShrapnel = True
+        self.hasCollided = False
+
+
+
+
+
     
 class invisEnemy(Npc):
     def __init__(self):
@@ -842,6 +882,7 @@ def main():
     pygame.mixer.music.play(-1, 0, 0)
     pygame.mixer.music.set_volume(0.25)
     dmg_sound = pygame.mixer.Sound('sounds/damage.ogg')
+    tick_sound = pygame.mixer.Sound('sounds/tick.ogg')
     game_over = pygame.mixer.Sound("sounds/gameover.ogg")
     regen_sound = pygame.mixer.Sound("sounds/regen.ogg")
     global punch_sound
@@ -871,6 +912,7 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
     pen_time = 0
+    pine_time = 0
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
@@ -976,24 +1018,37 @@ def main():
             enemies = startnewave(currentwave, hearts)
             if currentwave == 2:
                 player.add_weapon("pen")
-            elif current_wave == 3:
+            elif currentwave == 3:
                 player.add_weapon("pine")
-            elif current_wave == 4:
+            elif currentwave == 4:
                 player.add_weapon("PPAP")
 
             kills_this_wave = 0
             total_enemies_in_wave = sum(allenemywaves.get(currentwave, [0,0,0,0,0]))
   
-        if player.get_hp() > 0 and player.has_weapon("pen"):
-            if pen_time <= 0:
-                pen_time = 60
-                near = player.get_nearest_enemy(enemies)
-                # geen error bij None want leest van links naar rechts
-                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 700**2:
-                    projectiles.append(Projectile(player,near))
-                    print("added projectile")
-            else:
-                pen_time -= 1
+        if player.get_hp() > 0:
+            if player.has_weapon("pen"):
+                if pen_time <= 0:
+                    pen_time = 60
+                    near = player.get_nearest_enemy(enemies)
+                    # geen error bij None want leest van links naar rechts
+                    if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 700**2:
+                        projectiles.append(Projectile(player,near))
+                        print("added pen")
+                else:
+                    pen_time -= 1
+            if player.has_weapon("pine"):
+                if pine_time <= 0:
+                    pine_time = 173
+                    near = player.get_nearest_enemy(enemies)
+                    # geen error bij None want leest van links naar rechts
+                    if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 700**2:
+                        projectiles.append(Pineapple(player,near))
+                        print("added pine")
+                else:
+                    pine_time -= 1
+                
+
 
         if isinstance(invincible, int):
             invincible -= 1
@@ -1122,6 +1177,17 @@ def main():
                         projectile.hasCollided = True
                         dmg_sound.play()
                 #   voeg ananas toe met splash dmg
+                elif projectile.isPineapple and not projectile.hasCollided:
+                    if projectile.get_rect().colliderect(npc_rect):
+                        npc.takedamage(50)
+                        projectile.hasCollided = True
+                        dmg_sound.play()
+                        for shrap in projectile.explode():
+                            projectiles.append(shrap)
+                elif projectile.isShrapnel:
+                    if projectile.get_rect().colliderect(npc_rect):
+                        npc.takedamage(20)
+                        tick_sound.play()
                 if npc.health <= 0:
                         if npc in enemies: 
                             enemies.remove(npc)
@@ -1154,7 +1220,6 @@ def main():
 
                     flash_timer = flash_duration
 
-                    print(player.get_hp())
                     if player.get_hp() <= 0 and foo:
                         text = end_game()
                         pygame.mixer.music.stop()
