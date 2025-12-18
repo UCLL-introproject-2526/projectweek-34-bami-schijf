@@ -176,24 +176,28 @@ class Player:
 
     def up(self):
         global scroll_y
+        # verplaats de speler in wereldcoördinaten omhoog
         self.world_y -= self.speed
         self.world_y = max(screen_size[1] // 2, min(self.world_y, background_height - self.height))
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def down(self):
         global scroll_y
+        # verplaats de speler in de wereldcoördinaten naar beneden
         self.world_y += self.speed
         self.world_y = min(background_height - screen_size[1] // 2, min(self.world_y, background_height - self.height))
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def left(self):
         global scroll_x
+        # verplaats speler naar links in wereldcoördinaten 
         self.world_x -= self.speed
         self.world_x = max(screen_size[0] // 2, min(self.world_x, background_width - self.width))
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def right(self):
         global scroll_x
+        # verplaats de speler naar rechts in wereldcoördinaten 
         self.world_x += self.speed
         self.world_x = min(background_width - screen_size[0] // 2 , min(self.world_x, background_width - self.width))
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
