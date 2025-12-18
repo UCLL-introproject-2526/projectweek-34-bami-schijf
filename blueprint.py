@@ -402,7 +402,7 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
     for obj in drawables:
         if obj.hostile:         # exclude invisible enemy
             obj.draw(screen)
-    for heart in hearts:
+    for heart in hearts:        #tekent elk hartje op het veld
         heart.draw(screen, scroll_x, scroll_y)
     player.draw(screen)
     if text:
@@ -612,9 +612,7 @@ class Heart:
         self.height = 32
 
         # Afbeelding laden en schalen
-        self.image = pygame.image.load(
-            "sprites/Heart - sprite/heart.png"
-        ).convert_alpha()
+        self.image = pygame.image.load("sprites/Heart - sprite/heart.png").convert_alpha()
         self.image = pygame.transform.scale(
             self.image, (self.width, self.height)
         )
