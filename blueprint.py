@@ -207,12 +207,28 @@ class Player:
                     self.image = self.sprites[f"{self.direction}_walking"]
             else:
                 self.image = self.sprites[self.direction]
+    
+    def get_nearest_enemy(self, enemies):
+        if  enemies == []:
+            return None
+
+        nearest = None
+        min_dist = float("inf")
+        for enemy in enemies:
+            dx = enemy.world_x - self.world_x
+            dy = enemy.world_y - self.world_y
+            dist = dx**2 + dy**2
+            if dist < min_dist:
+                min_dist = dist
+                nearest = enemy
+        return nearest
 
     def get_rect(self):
         return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
     
     def get_world_rect(self):
         return pygame.Rect(self.world_x, self.world_y, self.width, self.height)
+
 
 class hitBox:
     def __init__(self, duration, size, player: Player):
