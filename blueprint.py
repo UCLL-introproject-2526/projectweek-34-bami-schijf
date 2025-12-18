@@ -950,6 +950,7 @@ def main():
                         if player.alive_start is not None and pause_start_time is not None:
                             pause_duration = time.time() - pause_start_time
                             player.alive_start += pause_duration
+            continue
 
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
