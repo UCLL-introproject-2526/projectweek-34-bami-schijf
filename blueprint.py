@@ -428,16 +428,23 @@ def draw_health(screen, player: Player):
     screen.blit(hp_text, text_rect)
 
 def draw_wave_progress(screen, kills, total):
+    # als er geen vijanden zijn
     if total <= 0:
         progress = 0
     else:
+        # percentage berekenen, aantal gedode vijanden / totaal aantal vijanden * 100
         progress = int(kills / total * 100)
     
+    # tekstobject met het berekende percentage
     progress_text = font.render(f"Wave Progress: {progress}%", True, (255, 255, 255))
+    # positie van de tekst
     bg_rect = progress_text.get_rect(topleft=(15, 80)) 
+    # rechthoek rond de tekst groter dan de tekst zelf
     bg_rect.inflate_ip(8, 8)
     pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
+    # tekst gecentreerd in de rechthoek
     text_rect = progress_text.get_rect(center=bg_rect.center)
+    # tekst op scherm tekenen
     screen.blit(progress_text, text_rect)
 
 def draw_timer(screen, player: Player, curr_wave):
