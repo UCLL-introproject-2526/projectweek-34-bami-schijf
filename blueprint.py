@@ -364,15 +364,11 @@ class Projectile():
         self.height = 75
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-<<<<<<< HEAD
-        self.lifespan = 60
-=======
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
@@ -567,8 +563,6 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
     screen.blit(text_surf, text_pos)
 
 
-<<<<<<< HEAD
-=======
 def draw_highscore_left(screen, highscore):
     # linksboven onder wave progress
     hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
@@ -581,14 +575,13 @@ def draw_highscore_left(screen, highscore):
 
 
 
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 def end_game():
     return Text("background/game_over.png")
 
 def restart_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 40,
+        screen_size[1] // 2 + 160,
         200,
         50
     )
@@ -596,7 +589,7 @@ def restart_button_rect():
 def continue_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 160,
+        screen_size[1] // 2 + 240,
         200,
         50
     )
@@ -605,7 +598,7 @@ def continue_button_rect():
 def main_menu_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 160,
+        screen_size[1] // 2 + 80,
         200,
         50
     )
@@ -820,8 +813,6 @@ def main():
     projectiles = []
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
-<<<<<<< HEAD
-=======
     pen_time = 0
     # Lees highscore bij start
     try:
@@ -829,8 +820,6 @@ def main():
             highscore = int(f.read())
     except FileNotFoundError:
         highscore = 0
-
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
@@ -846,6 +835,7 @@ def main():
 
     current_wave = 1
     while running:
+
         player_dx = 0
         player_dy = 0
 
@@ -983,6 +973,10 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
+                            near = player.get_nearest_enemy(enemies)
+                            if not near is None:
+                                projectiles.append(Projectile(player,near))
+                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
@@ -1108,15 +1102,12 @@ def main():
             txt = font.render("RESTART", True, (0,0,0))
             txt2 = font.render("CONTINUE", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
-<<<<<<< HEAD
             screen.blit(txt2, txt2.get_rect(center=btn2.center))
-=======
             # MAIN MENU button under restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
             main_txt = font.render("MAIN MENU", True, (0,0,0))
             screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 
         if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
@@ -1132,6 +1123,7 @@ def main():
 
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
+
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
         flip()
