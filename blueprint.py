@@ -371,15 +371,12 @@ class Projectile():
         self.height = 75
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-<<<<<<< HEAD
         self.lifespan = 60
-=======
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
@@ -574,8 +571,6 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
     screen.blit(text_surf, text_pos)
 
 
-<<<<<<< HEAD
-=======
 def draw_highscore_left(screen, highscore):
     # linksboven onder wave progress
     hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
@@ -588,7 +583,6 @@ def draw_highscore_left(screen, highscore):
 
 
 
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 def end_game():
     return Text("background/game_over.png")
 
@@ -824,8 +818,6 @@ def main():
     projectiles = []
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
-<<<<<<< HEAD
-=======
     pen_time = 0
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
@@ -836,7 +828,6 @@ def main():
     except FileNotFoundError:
         highscore = 0
 
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
@@ -879,11 +870,23 @@ def main():
             pygame.display.flip() # update scherm
             clock.tick(60) #framerate behouden
 
-    # Event-loop voor pauze
+            # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
                     pygame.quit()
                     sys.exit()
+                # Sta muiskliks toe tijdens pauze voor menu/music
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if music_button_rect.collidepoint(event.pos):
+                        if music_on:
+                            pygame.mixer.music.pause()
+                            music_on = False
+                        else:
+                            pygame.mixer.music.unpause()
+                            music_on = True
+                    if menu_button_rect.collidepoint(event.pos):
+                        pygame.mixer.music.stop()
+                        return
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -1114,15 +1117,12 @@ def main():
             txt = font.render("RESTART", True, (0,0,0))
             txt2 = font.render("CONTINUE", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
-<<<<<<< HEAD
             screen.blit(txt2, txt2.get_rect(center=btn2.center))
-=======
             # MAIN MENU button under restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
             main_txt = font.render("MAIN MENU", True, (0,0,0))
             screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
->>>>>>> 2883c14f24bf30daf49d65de655e1c0ccd3e44b3
 
         if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
