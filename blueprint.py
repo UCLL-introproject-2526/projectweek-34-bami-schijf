@@ -1,6 +1,7 @@
 import pygame
 import time
 import sys
+import os
 from pygame.display import flip
 from random import randint, choice, uniform
 from math import inf, asin
@@ -47,6 +48,7 @@ enemies = []
 punchitbox = None
 global cangonextwave 
 cangonextwave = True
+cancontinue = False
 
 def distanceSquared(dx: int, dy:int):
     return dx**2 + dy**2
@@ -612,7 +614,7 @@ def continue_button_rect():
         200,
         50
     )
-
+    cancontinue = False
 
 def main_menu_button_rect():
     return pygame.Rect(
@@ -636,6 +638,7 @@ def startnewave(currentwave, hearts):
         enemies.append(Boss())
     for _ in range(invis_enemy):
         enemies.append(invisEnemy())
+        cancontinue = True
     margin = screen_size[0] // 2
 
     # twee regen hartjes bij per wave
@@ -663,16 +666,19 @@ def main_menu():
         mpos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                remove_highscore_file()
                 pygame.quit()
                 return False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if play_rect.collidepoint(event.pos):
                     return True
                 if quit_rect.collidepoint(event.pos):
+                    remove_highscore_file()
                     pygame.quit()
                     return False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    remove_highscore_file()
                     pygame.quit()
                     return False
                 if event.key == pygame.K_RETURN:
@@ -711,6 +717,12 @@ def draw_menu_button(surface, rect, hover=False):
     for offset in (-spacing, 0, spacing):
         y = cy + offset
         pygame.draw.line(surface, line_color, (start_x, y), (start_x + line_w, y), 3)
+
+def remove_highscore_file():
+    # Verwijder het highscore bestand als het bestaat
+    if os.path.exists("highscore.txt"):
+        os.remove("highscore.txt")
+
 
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -887,6 +899,7 @@ def main():
             # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
+                    remove_highscore_file()
                     pygame.quit()
                     sys.exit()
                 # Sta muiskliks toe tijdens pauze voor menu/music
@@ -962,6 +975,7 @@ def main():
             
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                remove_highscore_file() 
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -981,11 +995,12 @@ def main():
                 if restart_button_rect().collidepoint(event.pos):
                     return main()
                 if continue_button_rect().collidepoint(event.pos):
-                    print("CONTINUE ON ")
-                    enemies = list()
-                    currentwave = 6
-                    cangonextwave = True
-                    text = None
+                    if player.get_hp() > 0:
+                        print("CONTINUE ON ")
+                        enemies = list()
+                        currentwave = 6
+                        cangonextwave = True
+                        text = None
             elif event.type == pygame.KEYDOWN:
                 
                 if event.key == pygame.K_ESCAPE:
@@ -1127,7 +1142,7 @@ def main():
         draw_highscore_left(screen, highscore) # toon highscore
 
         if player.get_hp() <= 0 or currentwave == 5:
-            if currentwave == 5 and player.get_hp() > 0:
+            if currentwave == 5 and player.get_hp() > 0 and cancontinue == True:
                 btn2 = continue_button_rect()
                 txt2 = font.render("CONTINUE", True, (0,0,0))
                 pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
