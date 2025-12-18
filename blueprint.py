@@ -901,7 +901,7 @@ def main():
             kills_this_wave = 0
             total_enemies_in_wave = sum(allenemywaves.get(currentwave))
   
-        if player.has_weapon("pen"):
+        if player.get_hp() > 0 and player.has_weapon("pen"):
             if pen_time <= 0:
                 pen_time = 60
                 near = player.get_nearest_enemy(enemies)
