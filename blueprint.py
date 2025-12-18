@@ -264,7 +264,7 @@ class hitBox:
 
 class Npc:
     def __init__(self):
-        self.world_x, self.world_y = randint(screen_size[0]/2, background_width-screen_size[0]/2), randint(screen_size[1]/2, background_height-screen_size[1]/2)
+        self.world_x, self.world_y = randint(screen_size[0]//2, background_width-screen_size[0]//2), randint(screen_size[1]//2, background_height-screen_size[1]//2)
         self.width, self.height = 45, 60
         self.base_speed = 3
         self.speed = self.base_speed
@@ -498,66 +498,99 @@ def startnewave(currentwave, hearts):
     
     return enemies
 
+# We maken een verkleinde versie van de achtergrond
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
+
+# Hoe vaak de minimap eventueel geüpdatet wordt
 MINIMAP_UPDATE_INTERVAL = 8
 minimap_timer = 0
+
 def draw_minimap(screen, player: Player, npcs: list, hearts: list):
-    # positie linksonder
+
+    # Linksonder op het scherm:
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
+    # Rectangle die exact de minimap voorstelt
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-    # achtergrond minimap
+
+    # Achtergrondkleur van de minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
+
+    # Rand rond de minimap
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
 
-
+    # Getekende achtergrondafbeelding in de minimap
     screen.blit(MINIMAP_BG, (x, y))
 
-    # schaal factor
+    # Deze factoren zetten wereldcoördinaten om naar minimap-coördinaten
     scale_x = MINIMAP_SIZE[0] / background_width
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
+        # Wereldpositie → minimap-positie
         mini_npc_x = x + int(npc.world_x * scale_x)
         mini_npc_y = y + int(npc.world_y * scale_y)
-        # Kleine rechthoek of cirkel als representatie
-        pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
+
+        # NPC wordt voorgesteld als een klein groen vierkantje
+        pygame.draw.rect(screen, (0, 200, 0),
+                         (mini_npc_x, mini_npc_y, 4, 4))
+
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
         mini_y = y + int(heart.world_y * scale_y)
+
+        # Hartjes worden voorgesteld als kleine rode cirkels
         pygame.draw.circle(screen, (255, 0, 0), (mini_x, mini_y), 3)
-    # speler positie
+
     px = x + int(player.world_x * scale_x)
     py = y + int(player.world_y * scale_y)
+
+    # Speler is duidelijk groter dan andere objecten
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
 
-    def __init__(self):
+
+def __init__(self):
+    # Startpositie van het sneeuwdeeltje
+    self.x = randint(0, screen_size[0])
+    self.y = randint(-screen_size[1], 0)
+
+    # Grootte van de sneeuwvlok
+    self.radius = randint(2, 6)
+
+    # Snelheid waarmee de sneeuw naar beneden valt
+    self.speed = uniform(1, 3)
+
+
+def update(self, player_dx=0, player_dy=0):
+    # Sneeuw beweegt standaard naar beneden
+    self.y += self.speed
+
+    # Beweging van de speler beïnvloedt de sneeuw
+    self.x -= player_dx * 1.7
+    self.y -= player_dy * 1.7
+
+    # Als sneeuw onder het scherm verdwijnt,
+    # wordt het opnieuw bovenaan gespawned
+    if self.y > screen_size[1]:
+        self.y = randint(-50, -10)
         self.x = randint(0, screen_size[0])
-        self.y = randint(-screen_size[1], 0)
-        self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
+
+        # Nieuwe random eigenschappen
+        self.radius = randint(2, 6)
         self.speed = uniform(1, 3)
 
-    def update(self, player_dx=0, player_dy=0):
-        self.y += self.speed
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
-        if self.y > screen_size[1]:
-            self.y = randint(-50, -10)
-            self.x = randint(0, screen_size[0])
-            self.radius = randint(2, 6)
-            self.speed = uniform(1, 3) 
-            self.speed = uniform(1, 3) 
 
-    def draw(self, screen, minimap_rect):
-        # alleen tekenen als het niet over de minimap valt
-        if not minimap_rect.collidepoint(self.x, self.y):
-            pygame.draw.circle(screen, (255,255,255), (int(self.x), int(self.y)), self.radius)
-
+def draw(self, screen, minimap_rect):
+    # We tekenen sneeuw NIET boven de minimap
+    if not minimap_rect.collidepoint(self.x, self.y):
+        pygame.draw.circle(
+            screen,
+            (255, 255, 255),
+            (int(self.x), int(self.y)),
+            self.radius
+        )
 class Heart:
     def __init__(self, x, y):
         self.world_x = x
