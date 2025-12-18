@@ -370,13 +370,13 @@ class Projectile():
         self.world_y = player.world_y - player.height // 2
         self.width = 75
         self.height = 75
-        self.dir = getDir((self.world_x + self.width // 2, self.world_y - self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
+        self.dir = getDir((self.world_x + self.width // 2, self.world_y + self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
         print(self.dir)
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
         if player.world_x < enemy.world_x:
-            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90 + 90)
+            self.image = pygame.transform.rotate(self.image, asin(-self.dir[1])*90+90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
