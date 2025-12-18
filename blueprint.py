@@ -25,14 +25,14 @@ wave_images = [
 ]
 
 pygame.display.set_caption("Fixed Game")
-clock = pygame.time.Clock()
-font = pygame.font.SysFont("arialblack", 24)
+clock = pygame.time.Clock() #clock objects voor framerate
+font = pygame.font.SysFont("arialblack", 24) # voor HP, timer, wave progress
 
 background_image = pygame.image.load("background/background-map 2 (snow).png").convert()
 background_width, background_height = background_image.get_size()
-scroll_x, scroll_y = 0, 0
+scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,0]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -51,7 +51,7 @@ class Player:
     def __init__(self):
         self.__maxHp = 15
         self.__health = self.__maxHp
-        self.base_speed = 3
+        self.base_speed = 3 # basissnelheid, wordt aangepast bij diagonale bewegingen (moet dit wel?)
         self.speed = self.base_speed
         self.width = 60
         self.height = 100
@@ -70,8 +70,8 @@ class Player:
 
         self.direction = "right"
         self.is_moving = False
-        self.walk_frame = 0
-        self.walk_timer = 0
+        self.walk_frame = 0 # voor switchen tussen walking sprites
+        self.walk_timer = 0 # telt frames om walk_frame te togglen
 
         self.sprites = {
             "left": pygame.transform.scale(
@@ -104,12 +104,11 @@ class Player:
             ),
         }
 
-        self.image = self.sprites["right"]
-        self.punching = False
-        self.punch_timer = 0
-        # timer: not started until first space press
-        self.alive_start = None
-        self.alive_end = None
+        self.image = self.sprites["right"] # start sprite
+        self.punching = False   # punch status
+        self.punch_timer = 0    # countdown voor punch animatie
+        self.alive_start = None # timer start voor hoe lang speler alive is
+        self.alive_end = None   # timer einde bij dood
 
     def getNearestEnemy(self, enemies: list):
         min = inf
@@ -144,6 +143,7 @@ class Player:
         return self.__health
 
     def take_damage(self, id: int):
+        # damage variabele per enemy type
         if id == 1:
             dmg = 1
         elif id == 2 or id == 3:
@@ -155,47 +155,57 @@ class Player:
             self.__health = 0
     
     def regen_hp(self, regen):
+        # regeneratie, limiet op maxHP
         self.__health += regen
         if self.__health > self.__maxHp:
             self.__health = self.__maxHp
 
     def punch(self, invincible):
         if not self.punching:
+            # start punch animatie
             print("punch")
             if self.direction == "right":
                 self.image = self.sprites["right_punch"]
             else:
                 self.image = self.sprites["left_punch"]
             self.punching = True
-            self.punch_timer = 30   # active frames
+            self.punch_timer = 30   # aantal frames dat punch actief is
             global punch_sound
             punch_sound.play()
             
-            return 30
-        return invincible
-
+            return 30   # geeft frames terug voor invincible timer
+        return invincible # als al punching, verander niets 
+    
     def up(self):
         global scroll_y
+        # verplaats de speler in wereldcoördinaten omhoog
         self.world_y -= self.speed
-        self.world_y = max(0, min(self.world_y, background_height - self.height))
+        # beperk positie binnen kaart, voorkomt dat speler te ver naar boven gaat
+        self.world_y = max(screen_size[1] // 2, min(self.world_y, background_height - self.height))
+        # update scroll zodat camera volgt
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def down(self):
         global scroll_y
+        # verplaats de speler in de wereldcoördinaten naar beneden
         self.world_y += self.speed
-        self.world_y = max(0, min(self.world_y, background_height - self.height))
+        # voorkomt dat speler buiten de onderkant gaat
+        self.world_y = min(background_height - screen_size[1] // 2, min(self.world_y, background_height - self.height))
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def left(self):
         global scroll_x
+        # verplaats speler naar links in wereldcoördinaten 
         self.world_x -= self.speed
-        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        self.world_x = max(screen_size[0] // 2, min(self.world_x, background_width - self.width))
+        # update scroll
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def right(self):
         global scroll_x
+        # verplaats de speler naar rechts in wereldcoördinaten 
         self.world_x += self.speed
-        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        self.world_x = min(background_width - screen_size[0] // 2 , min(self.world_x, background_width - self.width))
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def look_left(self):
@@ -206,20 +216,22 @@ class Player:
 
     def update_image(self):
         if self.punching:
+            # toon punch animatie, wordt automatisch gereset in main loop
             self.image = self.sprites[f"{self.direction}_punch"]
         else:
             if self.is_moving:
                 # Wissel tussen standaard en walking sprite
                 self.walk_timer += 1
-                if self.walk_timer >= 10:
+                if self.walk_timer >= 10:   # 10 frames per animatie frame
                     self.walk_timer = 0
-                    self.walk_frame = 1 - self.walk_frame  
+                    self.walk_frame = 1 - self.walk_frame   # toggle tussen 0 en 1
 
                 if self.walk_frame == 0:
-                    self.image = self.sprites[self.direction]
+                    self.image = self.sprites[self.direction]   # idle frame
                 else:
-                    self.image = self.sprites[f"{self.direction}_walking"]
+                    self.image = self.sprites[f"{self.direction}_walking"]  # walking frame
             else:
+                # idle sprite tonen
                 self.image = self.sprites[self.direction]
     
     def get_nearest_enemy(self, enemies):
@@ -229,12 +241,13 @@ class Player:
         nearest = None
         min_dist = float("inf")
         for enemy in enemies:
-            dx = enemy.world_x - self.world_x
-            dy = enemy.world_y - self.world_y
-            dist = dx**2 + dy**2
-            if dist < min_dist:
-                min_dist = dist
-                nearest = enemy
+            if enemy.hostile:
+                dx = enemy.world_x - self.world_x
+                dy = enemy.world_y - self.world_y
+                dist = dx**2 + dy**2
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest = enemy
         return nearest
 
     def get_rect(self):
@@ -325,15 +338,15 @@ class Npc:
             self.health -= amount
 
 class Projectile():
-    def __init__(self,player ,enemy : Npc):
+    def __init__(self,player : Player,enemy : Npc):
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
         self.world_x = player.world_x
         self.world_y = player.world_y
         self.width = 30
         self.height = 30
         self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image,(self.width, self.height))
-        self.lifespan = 100
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.lifespan = 60
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
@@ -358,17 +371,16 @@ class Projectile():
     
     def handle(self):
         self.goDir()
-        self.draw(screen)
-        print(self.world_x, self.world_y)
         return self.checkforlife()
     
     def get_rect(self):
         return pygame.Rect(
-            self.world_x + self.shrink_width // 2,
-            self.world_y + self.shrink_height // 2,
-            self.width - self.shrink_width,
-            self.height - self.shrink_height
-        )
+            self.world_x,
+            self.world_y,
+            self.width,
+            self.height
+    )
+    
     
 
 class invisEnemy(Npc):
@@ -376,6 +388,7 @@ class invisEnemy(Npc):
         super().__init__()
         self.width, self.height = 0,0
         self.hostile = False
+        self.health = inf
 
 class Labubu(Npc):
     def __init__(self):
@@ -449,7 +462,7 @@ class Text:
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox,projectiles: list, text=None):
+def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, projectiles: list, text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     
     drawables = npcs[:] # lijst kopie
@@ -542,9 +555,8 @@ def restart_button_rect():
     )
 
 def startnewave(currentwave, hearts):
-    wavemulti = 3
     enemies = []
-    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave, [randint(1,10)+currentwave * wavemulti,randint(1,50)+currentwave *wavemulti,randint(1,50)+currentwave*wavemulti,currentwave-6,0])
+    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave)
     for _ in range(fruit):
         enemies.append(Fruit())
     for _ in range(labubu):
@@ -877,11 +889,22 @@ def main():
                 regen_sound.play()
                 hearts.remove(heart)
         for npc in enemies:
+            npc_rect = npc.get_rect()
+            for projectile in projectiles:
+                if projectile.isPen and not projectile.hasCollided:
+                    if projectile.get_rect().colliderect(npc_rect):
+                        npc.takedamage(50)    # pen damage
+                        projectile.hasCollided = True
+                #   voeg ananas toe met splash dmg
+                if npc.health <= 0:
+                        if npc in enemies: 
+                            enemies.remove(npc)
+                            kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)
+                    
             if player.punching or not invincible:
-                if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
+                if player_rect.colliderect(npc_rect) and player.get_hp() > 0:
 
                     if player.punching:
-                        npc.takedamage(10)
                         npc.takedamage(10)
                     else:
                         player.take_damage(npc.id)
@@ -918,7 +941,7 @@ def main():
                     player.image = player.sprites["left"]
                 player.punching = False
 
-        renderFrame(screen, player, enemies, hearts, punchitbox, projectiles,text)
+        renderFrame(screen, player, enemies, hearts, punchitbox, projectiles, text)
         draw_health(screen, player)
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
