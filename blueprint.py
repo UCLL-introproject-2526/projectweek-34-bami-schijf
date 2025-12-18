@@ -12,6 +12,7 @@ MINIMAP_PLAYER_COLOR = (255, 255, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
+highscore = 0
 
 MINIMAP_RECT = pygame.Rect(
     MINIMAP_PADDING,
@@ -545,6 +546,7 @@ def draw_wave_progress(screen, kills, total):
     screen.blit(progress_text, text_rect)
 
 def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time=None):
+    global highscore
     if player.alive_start is None:
         elapsed = 0
     else:
@@ -552,7 +554,15 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
             # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
-            elapsed = int(player.alive_end - player.alive_start)
+                elapsed_time = int(player.alive_end - player.alive_start)
+
+                # update highscore als het beter is
+                if elapsed_time > highscore:
+                    highscore = elapsed_time
+                    with open("highscore.txt", "w") as f:
+                        f.write(str(highscore))
+
+            elapsed = int(player.alive_end - player.alive_start) if player.alive_end else 0
         else:
             now = time.time()
             if paused and pause_start_time is not None:
@@ -797,6 +807,7 @@ def main():
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
 
+    global highscore
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40)
@@ -854,6 +865,7 @@ def main():
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
+            draw_highscore_left(screen, highscore) # toon highscore
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
@@ -1112,6 +1124,7 @@ def main():
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
+        draw_highscore_left(screen, highscore) # toon highscore
 
         if player.get_hp() <= 0 or currentwave == 5:
             btn = restart_button_rect()
@@ -1155,8 +1168,6 @@ def main():
         screen.blit(snow_surface, (0, 0)) # teken sneeuw op transparante sneeuwlaag
 
         flip()
-
-    # do not quit here; let the top-level block control quitting
 
 if __name__ == "__main__":
     while True:
