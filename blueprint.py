@@ -894,7 +894,7 @@ def main():
             if pen_time <= 0:
                 pen_time = 60
                 near = player.get_nearest_enemy(enemies)
-                if not near is None:
+                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 400**2:
                     projectiles.append(Projectile(player,near))
                     print("added projectile")
             else:
