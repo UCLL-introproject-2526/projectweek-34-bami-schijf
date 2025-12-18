@@ -13,7 +13,7 @@ MINIMAP_PLAYER_COLOR = (255, 255, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
-highscore = 0
+highscore = (0, 0)
 
 MINIMAP_RECT = pygame.Rect(
     MINIMAP_PADDING,
@@ -43,7 +43,7 @@ background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
 #allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -343,7 +343,7 @@ class Npc:
 
     def trace(self, player: Player):
         if self.hostile:
-            m = getDir((self.world_x - self.width // 2, self.world_y - self.width // 2), (player.world_x - player.width // 2, player.world_y - player.height // 2))
+            m = getDir((self.world_x + self.width // 2, self.world_y), (player.world_x, player.world_y - self.height // 2))
             self.world_x += m[0] * self.speed
             self.world_y += m[1] * self.speed
 
@@ -366,18 +366,18 @@ class Npc:
 
 class Projectile():
     def __init__(self,player : Player,enemy : Npc):
-        self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
-        print(self.dir)
+        
         self.world_x = player.world_x - player.width // 2
         self.world_y = player.world_y - player.height // 2
         self.width = 75
         self.height = 75
+        self.dir = getDir((self.world_x + player.width, self.world_y + self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
+        print(self.dir)
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
-        
         if player.world_x < enemy.world_x:
-            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
+            self.image = pygame.transform.rotate(self.image, asin(-self.dir[1])*90+90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
@@ -556,19 +556,19 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
             # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
-                elapsed_time = int(player.alive_end - player.alive_start)
-
-                # update highscore als het beter is
-                if elapsed_time > highscore:
-                    highscore = elapsed_time
-                    with open("highscore.txt", "w") as f:
-                        f.write(str(highscore))
-
-            elapsed = int(player.alive_end - player.alive_start) if player.alive_end else 0
+            
+            elapsed_time = int(player.alive_end - player.alive_start)  # altijd definiëren
+            
+            # Alleen bij hogere wave, of zelfde wave maar langere tijd
+            if curr_wave > highscore[0] or (curr_wave == highscore[0] and elapsed_time > highscore[1]):
+                highscore = (curr_wave, elapsed_time)
+                with open("highscore.txt", "w") as f:
+                    f.write(f"{highscore[0]},{highscore[1]}")
+            
+            elapsed = elapsed_time
         else:
             now = time.time()
             if paused and pause_start_time is not None:
-                # stop de timer tijdens pauze
                 elapsed = int(pause_start_time - player.alive_start)
             else:
                 elapsed = int(now - player.alive_start)
@@ -585,14 +585,27 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
 
 
 def draw_highscore_left(screen, highscore):
-    # linksboven onder wave progress
-    hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
-    # linksboven onder wave progress: stel wave progress start op y=80
-    bg_rect = hs_text.get_rect(topleft=(15, 133))  # 15 px van links, 120 px van boven
-    bg_rect.inflate_ip(8, 8)
-    pygame.draw.rect(screen, (50,50,50), bg_rect, border_radius=6)
-    text_rect = hs_text.get_rect(center=bg_rect.center)
-    screen.blit(hs_text, text_rect)
+    wave, elapsed = highscore
+    mins = elapsed // 60
+    secs = elapsed % 60
+
+    line1 = font.render(f"Fastest time: {mins:02}:{secs:02}", True, (255, 255, 255))
+    line2 = font.render(f"to reach wave {wave}", True, (255, 255, 255))
+
+    # bepaal achtergrondgrootte
+    width = max(line1.get_width(), line2.get_width()) + 16  # padding
+    height = line1.get_height() + line2.get_height() + 16
+
+    # linker uitlijning, net als HP-balk
+    bg_rect = pygame.Rect(10, 130, width, height)  # x=15 uitgelijnd met HP-balk, y=80 iets eronder
+
+    pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
+
+    # teken tekst linksboven op achtergrond
+    screen.blit(line1, (bg_rect.x + 8, bg_rect.y + 8))
+    screen.blit(line2, (bg_rect.x + 8, bg_rect.y + 8 + line1.get_height()))
+
+
 
 
 
@@ -693,12 +706,24 @@ def main_menu():
         # draw semi-transparent buttons so they blend with background
         for rect, label in ((play_rect, "PLAY"), (quit_rect, "QUIT")):
             hover = rect.collidepoint(mpos)
+
+            # Button achtergrond
             btn_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-            base_alpha = 200 if hover else 140
-            btn_surf.fill((10, 10, 10, base_alpha))
-            pygame.draw.rect(btn_surf, (255,255,255,60), btn_surf.get_rect(), 2, border_radius=10)
+    
+            # Normale achtergrond (donkergrijs semi-transparant)
+            btn_surf.fill((10, 10, 10, 140))
+    
+            # Hoverkleur alleen binnen afgeronde hoeken
+            if hover:
+                hover_color = (196, 67, 45, 200)  # oranje met alpha 200
+                pygame.draw.rect(btn_surf, hover_color, btn_surf.get_rect(), border_radius=10)
+    
+            # Rand van de knop
+            pygame.draw.rect(btn_surf, (255, 255, 255, 60), btn_surf.get_rect(), 2, border_radius=10)
+
+            # Tekst altijd wit
+            txt = btn_font.render(label, True, (255, 255, 255))
             screen.blit(btn_surf, rect.topleft)
-            txt = btn_font.render(label, True, (240, 240, 240) if not hover else (20,20,20))
             screen.blit(txt, txt.get_rect(center=rect.center))
 
         pygame.display.flip()
@@ -846,11 +871,14 @@ def main():
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
+# Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
-            highscore = int(f.read())
+            parts = f.read().split(",")
+            highscore = (int(parts[0]), int(parts[1]))  # (wave, tijd)
     except FileNotFoundError:
-        highscore = 0
+        highscore = (0, 0)
+
 
 
     def show_wave_overlay(wave_number, duration=2):
@@ -922,7 +950,6 @@ def main():
                         if player.alive_start is not None and pause_start_time is not None:
                             pause_duration = time.time() - pause_start_time
                             player.alive_start += pause_duration
-            continue
 
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
@@ -953,11 +980,12 @@ def main():
             kills_this_wave = 0
             total_enemies_in_wave = sum(allenemywaves.get(currentwave, [0,0,0,0,0]))
   
-        if player.has_weapon("pen"):
+        if player.get_hp() > 0 and player.has_weapon("pen"):
             if pen_time <= 0:
                 pen_time = 60
                 near = player.get_nearest_enemy(enemies)
-                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 400**2:
+                # geen error bij None want leest van links naar rechts
+                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 700**2:
                     projectiles.append(Projectile(player,near))
                     print("added projectile")
             else:
@@ -1021,10 +1049,6 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
-                            near = player.get_nearest_enemy(enemies)
-                            if not near is None:
-                                projectiles.append(Projectile(player,near))
-                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
@@ -1088,6 +1112,7 @@ def main():
                     if projectile.get_rect().colliderect(npc_rect):
                         npc.takedamage(50)    # pen damage
                         projectile.hasCollided = True
+                        dmg_sound.play()
                 #   voeg ananas toe met splash dmg
                 if npc.health <= 0:
                         if npc in enemies: 
