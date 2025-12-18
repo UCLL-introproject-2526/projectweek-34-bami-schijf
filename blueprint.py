@@ -413,18 +413,24 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
 def draw_health(screen, player: Player):
     padding = 8
 
+    # huidige hp en max hp tonen
     hp_text = font.render(
         f"HP: {player.get_hp()} / {player.get_maxHp()}",
         True,
-        (220,30,30)
+        (220,30,30) # rode kleur
     )
 
+    # linksboven op scherm
     bg_rect = hp_text.get_rect(topleft=(20,20))
+    # rechthoek groter dan tekst 
     bg_rect.inflate_ip(padding*2, padding*2)
 
+    # grijze achtergrond voor leesbaarheid
     pygame.draw.rect(screen, (180,180,180), bg_rect, border_radius=6)
 
+    # tekst gecentreerd in rechthoek
     text_rect = hp_text.get_rect(center=bg_rect.center)
+    # tekst op scherm tekenen
     screen.blit(hp_text, text_rect)
 
 def draw_wave_progress(screen, kills, total):
