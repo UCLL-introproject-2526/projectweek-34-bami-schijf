@@ -233,12 +233,13 @@ class Player:
         nearest = None
         min_dist = float("inf")
         for enemy in enemies:
-            dx = enemy.world_x - self.world_x
-            dy = enemy.world_y - self.world_y
-            dist = dx**2 + dy**2
-            if dist < min_dist:
-                min_dist = dist
-                nearest = enemy
+            if enemy.hostile:
+                dx = enemy.world_x - self.world_x
+                dy = enemy.world_y - self.world_y
+                dist = dx**2 + dy**2
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest = enemy
         return nearest
 
     def get_rect(self):
@@ -340,6 +341,7 @@ class Projectile():
         self.lifespan = 60
         self.speed = 10
         self.hasCollided = False
+        self.isPen = True
 
     def goDir(self):
         self.world_x += self.speed * self.dir[0]
@@ -361,8 +363,16 @@ class Projectile():
     
     def handle(self):
         self.goDir()
-        print(self.world_x, self.world_y)
         return self.checkforlife()
+    
+    def get_rect(self):
+        return pygame.Rect(
+            self.world_x,
+            self.world_y,
+            self.width,
+            self.height
+    )
+    
     
 
 class invisEnemy(Npc):
@@ -370,6 +380,7 @@ class invisEnemy(Npc):
         super().__init__()
         self.width, self.height = 0,0
         self.hostile = False
+        self.health = inf
 
 class Labubu(Npc):
     def __init__(self):
@@ -870,11 +881,22 @@ def main():
                 regen_sound.play()
                 hearts.remove(heart)
         for npc in enemies:
+            npc_rect = npc.get_rect()
+            for projectile in projectiles:
+                if projectile.isPen and not projectile.hasCollided:
+                    if projectile.get_rect().colliderect(npc_rect):
+                        npc.takedamage(50)    # pen damage
+                        projectile.hasCollided = True
+                #   voeg ananas toe met splash dmg
+                if npc.health <= 0:
+                        if npc in enemies: 
+                            enemies.remove(npc)
+                            kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)
+                    
             if player.punching or not invincible:
-                if player_rect.colliderect(npc.get_rect()) and player.get_hp() > 0:
+                if player_rect.colliderect(npc_rect) and player.get_hp() > 0:
 
                     if player.punching:
-                        npc.takedamage(10)
                         npc.takedamage(10)
                     else:
                         player.take_damage(npc.id)
