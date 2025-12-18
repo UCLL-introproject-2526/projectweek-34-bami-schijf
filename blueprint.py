@@ -600,21 +600,39 @@ def draw(self, screen, minimap_rect):
         )
 class Heart:
     def __init__(self, x, y):
+        # Positie in de wereld
         self.world_x = x
         self.world_y = y
 
+        # Hoeveel leven dit hart geeft
         self.amount = 1
 
+        # Grootte van het sprite
         self.width = 32
         self.height = 32
 
-        self.image = pygame.image.load("sprites/Heart - sprite/heart.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        # Afbeelding laden en schalen
+        self.image = pygame.image.load(
+            "sprites/Heart - sprite/heart.png"
+        ).convert_alpha()
+        self.image = pygame.transform.scale(
+            self.image, (self.width, self.height)
+        )
 
     def draw(self, screen, scroll_x, scroll_y):
+        # Tekenen rekening houdend met camera/scroll
         screen.blit(
             self.image,
             (self.world_x - scroll_x, self.world_y - scroll_y)
+        )
+
+    def get_rect(self):
+        # Rect voor collision detection
+        return pygame.Rect(
+            self.world_x,
+            self.world_y,
+            self.width,
+            self.height
         )
 
     def get_rect(self):
