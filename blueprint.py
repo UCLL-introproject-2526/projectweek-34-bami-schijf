@@ -655,14 +655,14 @@ class Heart:
 
 def main():
     pygame.mixer.init()
-    pygame.mixer.music.load('sounds/background.mp3')
+    pygame.mixer.music.load('sounds/background.ogg')
     pygame.mixer.music.play(-1, 0, 0)
     pygame.mixer.music.set_volume(0.25)
-    dmg_sound = pygame.mixer.Sound('sounds/damage.mp3')
-    game_over = pygame.mixer.Sound("sounds/gameover.mp3")
-    regen_sound = pygame.mixer.Sound("sounds/regen.mp3")
+    dmg_sound = pygame.mixer.Sound('sounds/damage.ogg')
+    game_over = pygame.mixer.Sound("sounds/gameover.ogg")
+    regen_sound = pygame.mixer.Sound("sounds/regen.ogg")
     global punch_sound
-    punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
+    punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
 
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
