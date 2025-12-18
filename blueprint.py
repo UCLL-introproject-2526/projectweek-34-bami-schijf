@@ -139,6 +139,8 @@ class Player:
         else:
             dmg = 5
         self.__health -= dmg
+        if self.__health < 0:
+            self.__health = 0
     
     def regen_hp(self, regen):
         self.__health += regen
@@ -264,7 +266,7 @@ class hitBox:
 
 class Npc:
     def __init__(self):
-        self.world_x, self.world_y = randint(screen_size[0]/2, background_width-screen_size[0]/2), randint(screen_size[1]/2, background_height-screen_size[1]/2)
+        self.world_x, self.world_y = randint(screen_size[0]//2, background_width-screen_size[0]//2), randint(screen_size[1]//2, background_height-screen_size[1]//2)
         self.width, self.height = 45, 60
         self.base_speed = 3
         self.speed = self.base_speed
