@@ -13,7 +13,7 @@ MINIMAP_PLAYER_COLOR = (255, 255, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
-highscore = 0
+highscore = (0, 0)
 
 MINIMAP_RECT = pygame.Rect(
     MINIMAP_PADDING,
@@ -557,11 +557,12 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
                 player.alive_end = time.time()
                 elapsed_time = int(player.alive_end - player.alive_start)
 
-                # update highscore als het beter is
-                if elapsed_time > highscore:
-                    highscore = elapsed_time
-                    with open("highscore.txt", "w") as f:
-                        f.write(str(highscore))
+                # Alleen bij hogere wave, of zelfde wave maar langere tijd
+            if curr_wave > highscore[0] or (curr_wave == highscore[0] and elapsed_time > highscore[1]):
+                highscore = (curr_wave, elapsed_time)
+                with open("highscore.txt", "w") as f:
+                    f.write(f"{highscore[0]},{highscore[1]}")
+
 
             elapsed = int(player.alive_end - player.alive_start) if player.alive_end else 0
         else:
@@ -584,14 +585,27 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
 
 
 def draw_highscore_left(screen, highscore):
-    # linksboven onder wave progress
-    hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
-    # linksboven onder wave progress: stel wave progress start op y=80
-    bg_rect = hs_text.get_rect(topleft=(15, 133))  # 15 px van links, 120 px van boven
-    bg_rect.inflate_ip(8, 8)
-    pygame.draw.rect(screen, (50,50,50), bg_rect, border_radius=6)
-    text_rect = hs_text.get_rect(center=bg_rect.center)
-    screen.blit(hs_text, text_rect)
+    wave, elapsed = highscore
+    mins = elapsed // 60
+    secs = elapsed % 60
+
+    line1 = font.render(f"Fastest time: {mins:02}:{secs:02}", True, (255, 255, 255))
+    line2 = font.render(f"to reach wave {wave}", True, (255, 255, 255))
+
+    # bepaal achtergrondgrootte
+    width = max(line1.get_width(), line2.get_width()) + 16  # padding
+    height = line1.get_height() + line2.get_height() + 16
+
+    # linker uitlijning, net als HP-balk
+    bg_rect = pygame.Rect(10, 130, width, height)  # x=15 uitgelijnd met HP-balk, y=80 iets eronder
+
+    pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
+
+    # teken tekst linksboven op achtergrond
+    screen.blit(line1, (bg_rect.x + 8, bg_rect.y + 8))
+    screen.blit(line2, (bg_rect.x + 8, bg_rect.y + 8 + line1.get_height()))
+
+
 
 
 
@@ -844,11 +858,14 @@ def main():
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
+# Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
-            highscore = int(f.read())
+            parts = f.read().split(",")
+            highscore = (int(parts[0]), int(parts[1]))  # (wave, tijd)
     except FileNotFoundError:
-        highscore = 0
+        highscore = (0, 0)
+
 
 
     def show_wave_overlay(wave_number, duration=2):
