@@ -1,5 +1,6 @@
 import pygame
 import time
+import sys
 from pygame.display import flip
 from random import randint, choice, uniform
 from math import inf, asin
@@ -849,8 +850,8 @@ def main():
         # Event-loop voor pauze
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
-                    running = False
-                    paused = False
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -912,7 +913,8 @@ def main():
             
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
