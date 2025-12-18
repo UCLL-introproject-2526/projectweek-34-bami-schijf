@@ -49,6 +49,7 @@ def getDir(selfCoords: tuple, playerCoords: tuple):
 
 class Player:
     def __init__(self):
+        self.draw_offset_x = 0
         self.__maxHp = 15
         self.__health = self.__maxHp
         self.base_speed = 3 # basissnelheid, wordt aangepast bij diagonale bewegingen (moet dit wel?)
@@ -123,7 +124,11 @@ class Player:
     def draw(self, screen):
         self.draw_shadow(screen)
         # Always draw player at the center of the screen
-        screen.blit(self.image, (self.screen_x, self.screen_y))
+        screen.blit(
+            self.image,
+            (self.screen_x + self.draw_offset_x, self.screen_y)
+        )
+
 
 
     def draw_shadow(self, screen):
@@ -215,24 +220,29 @@ class Player:
         self.direction = "right"
 
     def update_image(self):
-        if self.punching:
-            # toon punch animatie, wordt automatisch gereset in main loop
-            self.image = self.sprites[f"{self.direction}_punch"]
-        else:
-            if self.is_moving:
-                # Wissel tussen standaard en walking sprite
-                self.walk_timer += 1
-                if self.walk_timer >= 10:   # 10 frames per animatie frame
-                    self.walk_timer = 0
-                    self.walk_frame = 1 - self.walk_frame   # toggle tussen 0 en 1
+        punch_width = 75
+        punch_height = 102
 
+        if self.punching:
+            # schaal punch sprite
+            self.image = pygame.transform.scale(self.sprites[f"{self.direction}_punch"], (punch_width, punch_height))
+
+            # CENTREER zowel links als rechts
+            self.draw_offset_x = (self.width - punch_width) // 2  # halve verschil, zodat centreren
+        else:
+            self.draw_offset_x = 0
+            if self.is_moving:
+                self.walk_timer += 1
+                if self.walk_timer >= 10:
+                    self.walk_timer = 0
+                    self.walk_frame = 1 - self.walk_frame
                 if self.walk_frame == 0:
-                    self.image = self.sprites[self.direction]   # idle frame
+                    self.image = self.sprites[self.direction]
                 else:
-                    self.image = self.sprites[f"{self.direction}_walking"]  # walking frame
+                    self.image = self.sprites[f"{self.direction}_walking"]
             else:
-                # idle sprite tonen
                 self.image = self.sprites[self.direction]
+
     
     def get_nearest_enemy(self, enemies):
         if  enemies == []:
