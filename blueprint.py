@@ -665,15 +665,6 @@ def main():
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
     music_on = True
 
-    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
-    mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
-    music_on = True
-
-    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
-    mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
-    music_on = True
     foo = True
     flash_timer = 0
     flash_duration = 3
@@ -728,34 +719,21 @@ def main():
         clock.tick(60)
         pygame.event.pump()
         for event in pygame.event.get():
+            # als gebruiker op mute-knop klikt
             if event.type == pygame.QUIT:
                 running = False
+            # controleert of muisknop is ingeklikt
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
+                        # muziek pauzeren indien ingeklikt
                         pygame.mixer.music.pause()
-                        music_on = False
+                        music_on = False # status bijhouden
                     else:
+                        # muziek hervatten
                         pygame.mixer.music.unpause()
-                        music_on = True
+                        music_on = True # status bijhouden
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if music_button_rect.collidepoint(event.pos):
-                    if music_on:
-                        pygame.mixer.music.pause()
-                        music_on = False
-                    else:
-                        pygame.mixer.music.unpause()
-                        music_on = True
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if music_button_rect.collidepoint(event.pos):
-                    if music_on:
-                        pygame.mixer.music.pause()
-                        music_on = False
-                    else:
-                        pygame.mixer.music.unpause()
-                        music_on = True
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if restart_button_rect().collidepoint(event.pos):
