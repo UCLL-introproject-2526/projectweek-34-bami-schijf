@@ -32,7 +32,7 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0
 
-allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,0]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -325,7 +325,7 @@ class Npc:
             self.health -= amount
 
 class Projectile():
-    def __init__(self,player : Player,enemy : Npc):
+    def __init__(self,player ,enemy : Npc):
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
         self.world_x = player.world_x
         self.world_y = player.world_y
@@ -336,6 +336,7 @@ class Projectile():
         self.lifespan = 100
         self.speed = 10
         self.hasCollided = False
+        self.isPen = True
 
     def goDir(self):
         self.world_x += self.speed * self.dir[0]
@@ -360,6 +361,14 @@ class Projectile():
         self.draw(screen)
         print(self.world_x, self.world_y)
         return self.checkforlife()
+    
+    def get_rect(self):
+        return pygame.Rect(
+            self.world_x + self.shrink_width // 2,
+            self.world_y + self.shrink_height // 2,
+            self.width - self.shrink_width,
+            self.height - self.shrink_height
+        )
     
 
 class invisEnemy(Npc):
@@ -533,8 +542,9 @@ def restart_button_rect():
     )
 
 def startnewave(currentwave, hearts):
+    wavemulti = 3
     enemies = []
-    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave)
+    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave, [randint(1,10)+currentwave * wavemulti,randint(1,50)+currentwave *wavemulti,randint(1,50)+currentwave*wavemulti,currentwave-6,0])
     for _ in range(fruit):
         enemies.append(Fruit())
     for _ in range(labubu):
@@ -644,14 +654,14 @@ class Heart:
 
 def main():
     pygame.mixer.init()
-    pygame.mixer.music.load('sounds/background.mp3')
+    pygame.mixer.music.load('sounds/background.ogg')
     pygame.mixer.music.play(-1, 0, 0)
     pygame.mixer.music.set_volume(0.25)
-    dmg_sound = pygame.mixer.Sound('sounds/damage.mp3')
-    game_over = pygame.mixer.Sound("sounds/gameover.mp3")
-    regen_sound = pygame.mixer.Sound("sounds/regen.mp3")
+    dmg_sound = pygame.mixer.Sound('sounds/damage.ogg')
+    game_over = pygame.mixer.Sound("sounds/gameover.ogg")
+    regen_sound = pygame.mixer.Sound("sounds/regen.ogg")
     global punch_sound
-    punch_sound = pygame.mixer.Sound('sounds/punch.mp3')
+    punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
 
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
