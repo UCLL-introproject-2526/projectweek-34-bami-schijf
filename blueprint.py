@@ -42,8 +42,8 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-#allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+#allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -116,6 +116,16 @@ class Player:
             ),
         }
 
+        self.sword_image = pygame.image.load("sprites/Projectile - sprite/sword.png").convert_alpha()
+        self.sword_image = pygame.transform.rotate(self.sword_image, -90)
+
+        self.sword_width = 130
+        self.sword_height = 90
+
+        self.sword_image = pygame.transform.scale(self.sword_image, (self.sword_width, self.sword_height)
+)
+
+
         self.image = self.sprites["right"] # start sprite
         self.punching = False   # punch status
         self.punch_timer = 0    # countdown voor punch animatie
@@ -139,6 +149,20 @@ class Player:
             self.image,
             (self.screen_x + self.draw_offset_x, self.screen_y)
         )
+        if self.punching and self.has_weapon("PPAP"):
+            sword = self.sword_image
+
+            if self.direction == "left":
+                sword = pygame.transform.flip(sword, True, False)
+
+            # position sword relative to player
+            sword_x = self.screen_x + self.width
+            sword_y = self.screen_y - 5
+
+            if self.direction == "left":
+                sword_x -= self.sword_width + self.width
+
+            screen.blit(sword, (sword_x, sword_y))
 
 
 
@@ -449,11 +473,6 @@ class Shrapnel(Projectile):
         self.isShrapnel = True
         self.hasCollided = False
 
-
-
-
-
-    
 class invisEnemy(Npc):
     def __init__(self):
         super().__init__()
@@ -476,7 +495,7 @@ class Labubu(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 30
         self.shrink_height = 40
-        self.health = 205
+        self.health = 305
         self.id = 3
 
 class Zombie(Npc):
@@ -494,7 +513,7 @@ class Fruit(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 3.5
-        self.health = 80
+        self.health = 155
         self.id = 2
         self.width = 70
         self.shrink_width = 5
@@ -517,7 +536,7 @@ class Boss(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 80
         self.shrink_height = 120
-        self.health = 2000
+        self.health = 5000
         self.id = 4
 
 class Text:
@@ -1201,7 +1220,7 @@ def main():
                             if not player.has_weapon("PPAP"):
                                 npc.takedamage(50)  # punch damage
                             else:
-                                npc.takedamage(80)  # ppap damages
+                                npc.takedamage(100)  # ppap damages
 
                             npc.inv = 30
                             dmg_sound.play()
