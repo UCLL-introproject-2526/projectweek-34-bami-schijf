@@ -42,8 +42,8 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-#allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+#allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
