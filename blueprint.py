@@ -973,7 +973,7 @@ def main():
                 pen_time = 60
                 near = player.get_nearest_enemy(enemies)
                 # geen error bij None want leest van links naar rechts
-                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 400**2:
+                if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 500**2:
                     projectiles.append(Projectile(player,near))
                     print("added projectile")
             else:
