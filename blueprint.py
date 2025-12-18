@@ -1,6 +1,7 @@
 import pygame
 import time
 import sys
+import os
 from pygame.display import flip
 from random import randint, choice, uniform
 from math import inf, asin
@@ -12,6 +13,7 @@ MINIMAP_PLAYER_COLOR = (255, 255, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
+highscore = (0, 0)
 
 MINIMAP_RECT = pygame.Rect(
     MINIMAP_PADDING,
@@ -545,6 +547,7 @@ def draw_wave_progress(screen, kills, total):
     screen.blit(progress_text, text_rect)
 
 def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time=None):
+    global highscore
     if player.alive_start is None:
         elapsed = 0
     else:
@@ -552,7 +555,16 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
             # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
-            elapsed = int(player.alive_end - player.alive_start)
+                elapsed_time = int(player.alive_end - player.alive_start)
+
+                # Alleen bij hogere wave, of zelfde wave maar langere tijd
+            if curr_wave > highscore[0] or (curr_wave == highscore[0] and elapsed_time > highscore[1]):
+                highscore = (curr_wave, elapsed_time)
+                with open("highscore.txt", "w") as f:
+                    f.write(f"{highscore[0]},{highscore[1]}")
+
+
+            elapsed = int(player.alive_end - player.alive_start) if player.alive_end else 0
         else:
             now = time.time()
             if paused and pause_start_time is not None:
@@ -573,14 +585,27 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
 
 
 def draw_highscore_left(screen, highscore):
-    # linksboven onder wave progress
-    hs_text = font.render(f"Best time: {highscore//60:02}:{highscore%60:02}", True, (255, 255, 255))
-    # linksboven onder wave progress: stel wave progress start op y=80
-    bg_rect = hs_text.get_rect(topleft=(15, 133))  # 15 px van links, 120 px van boven
-    bg_rect.inflate_ip(8, 8)
-    pygame.draw.rect(screen, (50,50,50), bg_rect, border_radius=6)
-    text_rect = hs_text.get_rect(center=bg_rect.center)
-    screen.blit(hs_text, text_rect)
+    wave, elapsed = highscore
+    mins = elapsed // 60
+    secs = elapsed % 60
+
+    line1 = font.render(f"Fastest time: {mins:02}:{secs:02}", True, (255, 255, 255))
+    line2 = font.render(f"to reach wave {wave}", True, (255, 255, 255))
+
+    # bepaal achtergrondgrootte
+    width = max(line1.get_width(), line2.get_width()) + 16  # padding
+    height = line1.get_height() + line2.get_height() + 16
+
+    # linker uitlijning, net als HP-balk
+    bg_rect = pygame.Rect(10, 130, width, height)  # x=15 uitgelijnd met HP-balk, y=80 iets eronder
+
+    pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
+
+    # teken tekst linksboven op achtergrond
+    screen.blit(line1, (bg_rect.x + 8, bg_rect.y + 8))
+    screen.blit(line2, (bg_rect.x + 8, bg_rect.y + 8 + line1.get_height()))
+
+
 
 
 
@@ -653,16 +678,19 @@ def main_menu():
         mpos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                remove_highscore_file()
                 pygame.quit()
                 return False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if play_rect.collidepoint(event.pos):
                     return True
                 if quit_rect.collidepoint(event.pos):
+                    remove_highscore_file()
                     pygame.quit()
                     return False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    remove_highscore_file()
                     pygame.quit()
                     return False
                 if event.key == pygame.K_RETURN:
@@ -701,6 +729,12 @@ def draw_menu_button(surface, rect, hover=False):
     for offset in (-spacing, 0, spacing):
         y = cy + offset
         pygame.draw.line(surface, line_color, (start_x, y), (start_x + line_w, y), 3)
+
+def remove_highscore_file():
+    # Verwijder het highscore bestand als het bestaat
+    if os.path.exists("highscore.txt"):
+        os.remove("highscore.txt")
+
 
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -797,6 +831,7 @@ def main():
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
 
+    global highscore
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40)
@@ -823,11 +858,14 @@ def main():
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
+# Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
-            highscore = int(f.read())
+            parts = f.read().split(",")
+            highscore = (int(parts[0]), int(parts[1]))  # (wave, tijd)
     except FileNotFoundError:
-        highscore = 0
+        highscore = (0, 0)
+
 
 
     def show_wave_overlay(wave_number, duration=2):
@@ -854,6 +892,7 @@ def main():
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
+            draw_highscore_left(screen, highscore) # toon highscore
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
@@ -875,6 +914,7 @@ def main():
             # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
+                    remove_highscore_file()
                     pygame.quit()
                     sys.exit()
                 # Sta muiskliks toe tijdens pauze voor menu/music
@@ -951,6 +991,7 @@ def main():
             
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                remove_highscore_file() 
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -1110,18 +1151,21 @@ def main():
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
+        draw_highscore_left(screen, highscore) # toon highscore
 
         if player.get_hp() <= 0 or currentwave == 5:
+            if currentwave == 5 and player.get_hp() > 0:
+                btn2 = continue_button_rect()
+                txt2 = font.render("CONTINUE", True, (0,0,0))
+                pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
+                screen.blit(txt2, txt2.get_rect(center=btn2.center))
+
             btn = restart_button_rect()
-            btn2 = continue_button_rect()
 
             pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
-            pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
 
             txt = font.render("RESTART", True, (0,0,0))
-            txt2 = font.render("CONTINUE", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
-            screen.blit(txt2, txt2.get_rect(center=btn2.center))
             # MAIN MENU button under restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
@@ -1153,8 +1197,6 @@ def main():
         screen.blit(snow_surface, (0, 0)) # teken sneeuw op transparante sneeuwlaag
 
         flip()
-
-    # do not quit here; let the top-level block control quitting
 
 if __name__ == "__main__":
     while True:
