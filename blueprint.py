@@ -13,6 +13,13 @@ MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
 
+MINIMAP_RECT = pygame.Rect(
+    MINIMAP_PADDING,
+    screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING,
+    MINIMAP_SIZE[0],
+    MINIMAP_SIZE[1]
+)
+
 pygame.init()
 screen = pygame.display.set_mode(screen_size)
 
@@ -364,6 +371,10 @@ class Projectile():
         self.height = 75
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+<<<<<<< HEAD
+=======
+        self.lifespan = 60
+>>>>>>> 4fa91c32068c0a9bc2e2696815fe1c89f1daa87c
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
@@ -728,7 +739,7 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     py = y + int(player.world_y * scale_y)
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
-
+class Snowflake:
     def __init__(self):
         self.x = randint(0, screen_size[0])
         self.y = randint(-screen_size[1], 0)
@@ -739,13 +750,10 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
         self.y += self.speed
         self.x -= player_dx * 1.7
         self.y -= player_dy * 1.7
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
         if self.y > screen_size[1]:
             self.y = randint(-50, -10)
             self.x = randint(0, screen_size[0])
             self.radius = randint(2, 6)
-            self.speed = uniform(1, 3) 
             self.speed = uniform(1, 3) 
 
     def draw(self, screen, minimap_rect):
@@ -814,6 +822,8 @@ def main():
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
     pen_time = 0
+    snowflakes = [Snowflake() for _ in range(100)]
+    snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
@@ -821,6 +831,10 @@ def main():
     except FileNotFoundError:
         highscore = 0
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4fa91c32068c0a9bc2e2696815fe1c89f1daa87c
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
@@ -863,11 +877,23 @@ def main():
             pygame.display.flip() # update scherm
             clock.tick(60) #framerate behouden
 
-    # Event-loop voor pauze
+            # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
                     pygame.quit()
                     sys.exit()
+                # Sta muiskliks toe tijdens pauze voor menu/music
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if music_button_rect.collidepoint(event.pos):
+                        if music_on:
+                            pygame.mixer.music.pause()
+                            music_on = False
+                        else:
+                            pygame.mixer.music.unpause()
+                            music_on = True
+                    if menu_button_rect.collidepoint(event.pos):
+                        pygame.mixer.music.stop()
+                        return
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -1125,6 +1151,13 @@ def main():
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
 
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
+
+        snow_surface.fill((0, 0, 0, 0))
+        for snow in snowflakes:
+            snow.update(player_dx, player_dy)
+            snow.draw(snow_surface, MINIMAP_RECT)
+
+        screen.blit(snow_surface, (0, 0))
 
         flip()
 
