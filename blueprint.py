@@ -33,7 +33,8 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+#allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -363,6 +364,7 @@ class Projectile():
         self.height = 75
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.lifespan = 60
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
@@ -402,8 +404,6 @@ class Projectile():
             self.height
     )
     
-    
-
 class invisEnemy(Npc):
     def __init__(self):
         super().__init__()
@@ -426,7 +426,7 @@ class Labubu(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 30
         self.shrink_height = 40
-        self.health = 155
+        self.health = 8
         self.id = 3
 
 class Zombie(Npc):
@@ -444,7 +444,7 @@ class Fruit(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 3.5
-        self.health = 105
+        self.health = 5
         self.id = 2
         self.width = 70
         self.shrink_width = 5
@@ -582,7 +582,15 @@ def end_game():
 def restart_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 100,
+        screen_size[1] // 2 + 40,
+        200,
+        50
+    )
+
+def continue_button_rect():
+    return pygame.Rect(
+        screen_size[0] // 2 - 100,
+        screen_size[1] // 2 + 160,
         200,
         50
     )
@@ -598,7 +606,8 @@ def main_menu_button_rect():
 
 def startnewave(currentwave, hearts):
     enemies = []
-    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave)
+    multi = 3
+    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave,[randint(1,10)+currentwave * multi ,randint(1,10)+currentwave * multi ,randint(1,10)+currentwave * multi,currentwave-6 ,0])
     for _ in range(fruit):
         enemies.append(Fruit())
     for _ in range(labubu):
@@ -772,7 +781,6 @@ class Heart:
             self.height
     )
 
-
 def main():
     pygame.mixer.init()
     pygame.mixer.music.load('sounds/background.ogg')
@@ -830,7 +838,7 @@ def main():
     current_wave = 1
     while running:
         player_dx = 0
-        player_dy = 0  
+        player_dy = 0
 
         if paused:
             # Render huidig frame
@@ -838,7 +846,6 @@ def main():
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
-            draw_highscore_left(screen, highscore) # toon highscore
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
@@ -857,7 +864,7 @@ def main():
             pygame.display.flip() # update scherm
             clock.tick(60) #framerate behouden
 
-        # Event-loop voor pauze
+    # Event-loop voor pauze
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
                     pygame.quit()
@@ -883,7 +890,7 @@ def main():
 
 
 
-        if enemies == list() and current_wave <= 4:
+        if enemies == list():
             print("NEW WAVE STARTING")
             # toon overlay van de nieuwe wave
             next_wave_number = currentwave + 1
@@ -899,7 +906,7 @@ def main():
                 player.add_weapon("PPAP")
 
             kills_this_wave = 0
-            total_enemies_in_wave = sum(allenemywaves.get(currentwave))
+            total_enemies_in_wave = sum(allenemywaves.get(currentwave, [0,0,0,0,0]))
   
         if player.get_hp() > 0 and player.has_weapon("pen"):
             if pen_time <= 0:
@@ -941,9 +948,12 @@ def main():
                     return
                 if restart_button_rect().collidepoint(event.pos):
                     return main()
-
-                
-
+                if continue_button_rect().collidepoint(event.pos):
+                    print("CONTINUE ON ")
+                    enemies = list()
+                    currentwave = 6
+                    cangonextwave = True
+                    text = None
             elif event.type == pygame.KEYDOWN:
                 
                 if event.key == pygame.K_ESCAPE:
@@ -1027,7 +1037,6 @@ def main():
                     if projectile.get_rect().colliderect(npc_rect):
                         npc.takedamage(50)    # pen damage
                         projectile.hasCollided = True
-                        dmg_sound.play()
                 #   voeg ananas toe met splash dmg
                 if npc.health <= 0:
                         if npc in enemies: 
@@ -1060,18 +1069,7 @@ def main():
                         pygame.mixer.music.stop()
                         game_over.play()
                         foo = not foo
-
-                        # bereken elapsed tijd
-                        player.alive_end = time.time()
-                        elapsed_time = int(player.alive_end - player.alive_start)
-
-                        # update highscore als het beter is
-                        if elapsed_time > highscore:
-                            highscore = elapsed_time
-                            with open("highscore.txt", "w") as f:
-                                f.write(str(highscore))
-
-
+            
                         text.y = screen_size[1] // 3
                     break
             
@@ -1090,14 +1088,18 @@ def main():
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
-        draw_highscore_left(screen, highscore)
 
         if player.get_hp() <= 0 or currentwave == 5:
             btn = restart_button_rect()
+            btn2 = continue_button_rect()
+
             pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
+            pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
 
             txt = font.render("RESTART", True, (0,0,0))
+            txt2 = font.render("CONTINUE", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
+            screen.blit(txt2, txt2.get_rect(center=btn2.center))
             # MAIN MENU button under restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
