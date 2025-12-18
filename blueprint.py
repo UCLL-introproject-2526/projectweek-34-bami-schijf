@@ -323,7 +323,8 @@ class Npc:
         self.speed = self.base_speed
         self.shrink_width = 22.5
         self.shrink_height = 45
-        self.hostile = True          
+        self.hostile = True
+        self.inv = False   
 
     def draw(self, screen):
         if self.hostile:
@@ -358,10 +359,11 @@ class Npc:
         )
 
     def takedamage(self,amount):
-        if self.health - amount <= 0 : 
-            self.health = 0
-        else:
-            self.health -= amount
+        if not self.inv:
+            if self.health - amount <= 0 : 
+                self.health = 0
+            else:
+                self.health -= amount
 
 class Projectile():
     def __init__(self,player : Player,enemy : Npc):
@@ -374,12 +376,10 @@ class Projectile():
         print(self.dir)
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        self.lifespan = 60
-        print(math.asin(self.dir[1])*180+90)
 
         self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0])) + 90
         self.image = pygame.transform.rotate(self.image,self.angle)
-        self.lifespan = 30
+        self.lifespan = 40
         self.speed = 10
         self.hasCollided = False
         self.isPen = True
@@ -436,7 +436,7 @@ class Labubu(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 30
         self.shrink_height = 40
-        self.health = 8
+        self.health = 205
         self.id = 3
 
 class Zombie(Npc):
@@ -447,14 +447,14 @@ class Zombie(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 30
         self.shrink_height = 40
-        self.health = 3
+        self.health = 55
         self.id = 1
 
 class Fruit(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 3.5
-        self.health = 5
+        self.health = 80
         self.id = 2
         self.width = 70
         self.shrink_width = 5
@@ -477,7 +477,7 @@ class Boss(Npc):
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.shrink_width = 80
         self.shrink_height = 120
-        self.health = 1000
+        self.health = 2000
         self.id = 4
 
 class Text:
@@ -1110,11 +1110,15 @@ def main():
                 regen_sound.play()
                 hearts.remove(heart)
         for npc in enemies:
+            if not npc.inv == False:
+                npc.inv -= 1
+                if npc.inv <= 0:
+                    npc.inv = False
             npc_rect = npc.get_rect()
             for projectile in projectiles:
                 if projectile.isPen and not projectile.hasCollided:
                     if projectile.get_rect().colliderect(npc_rect):
-                        npc.takedamage(50)    # pen damage
+                        npc.takedamage(60)    # pen damage
                         projectile.hasCollided = True
                         dmg_sound.play()
                 #   voeg ananas toe met splash dmg
@@ -1127,19 +1131,26 @@ def main():
                 if player_rect.colliderect(npc_rect) and player.get_hp() > 0:
 
                     if player.punching:
-                        npc.takedamage(10)
+                        if not npc.inv:
+                            if not player.has_weapon("PPAP"):
+                                npc.takedamage(50)  # punch damage
+                            else:
+                                npc.takedamage(80)  # ppap damages
+
+                            npc.inv = 30
+                            dmg_sound.play()
                     else:
-                        player.take_damage(npc.id)
-                        invincible = 60
-                        stunned = 10
+                        if not npc.inv:
+                            player.take_damage(npc.id)
+                            invincible = 60
+                            stunned = 10
+                            dmg_sound.play()
                     
                     if npc.health <= 0:
                         if npc in enemies: 
                             enemies.remove(npc)
                             kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)  # max 100%
 
-
-                    dmg_sound.play()
 
                     flash_timer = flash_duration
 
