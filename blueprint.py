@@ -332,6 +332,7 @@ class Projectile():
         self.width = 30
         self.height = 30
         self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image,(self.width, self.height))
         self.lifespan = 100
         self.speed = 10
         self.hasCollided = False
@@ -439,7 +440,7 @@ class Text:
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, text=None):
+def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox,projectiles: list, text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     
     drawables = npcs[:] # lijst kopie
@@ -703,7 +704,7 @@ def main():
 
         if paused:
             # Render huidig frame
-            renderFrame(screen, player, enemies, hearts, punchitbox, text)
+            renderFrame(screen, player, enemies, hearts, punchitbox, projectiles, text)
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
@@ -907,7 +908,7 @@ def main():
                     player.image = player.sprites["left"]
                 player.punching = False
 
-        renderFrame(screen, player, enemies, hearts, punchitbox, text)
+        renderFrame(screen, player, enemies, hearts, punchitbox, projectiles,text)
         draw_health(screen, player)
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
