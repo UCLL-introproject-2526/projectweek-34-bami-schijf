@@ -1,6 +1,7 @@
 import pygame
 import time
 import sys
+import os
 from pygame.display import flip
 from random import randint, choice, uniform
 from math import inf, asin
@@ -663,16 +664,19 @@ def main_menu():
         mpos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                remove_highscore_file()
                 pygame.quit()
                 return False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if play_rect.collidepoint(event.pos):
                     return True
                 if quit_rect.collidepoint(event.pos):
+                    remove_highscore_file()
                     pygame.quit()
                     return False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    remove_highscore_file()
                     pygame.quit()
                     return False
                 if event.key == pygame.K_RETURN:
@@ -711,6 +715,12 @@ def draw_menu_button(surface, rect, hover=False):
     for offset in (-spacing, 0, spacing):
         y = cy + offset
         pygame.draw.line(surface, line_color, (start_x, y), (start_x + line_w, y), 3)
+
+def remove_highscore_file():
+    # Verwijder het highscore bestand als het bestaat
+    if os.path.exists("highscore.txt"):
+        os.remove("highscore.txt")
+
 
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -887,6 +897,7 @@ def main():
             # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
+                    remove_highscore_file()
                     pygame.quit()
                     sys.exit()
                 # Sta muiskliks toe tijdens pauze voor menu/music
@@ -962,6 +973,7 @@ def main():
             
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                remove_highscore_file() 
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
