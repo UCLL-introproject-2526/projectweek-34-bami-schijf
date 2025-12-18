@@ -311,7 +311,7 @@ class Npc:
             self.health -= amount
 
 class Projectile():
-    def __init__(self,player : Player,enemy : Npc):
+    def __init__(self, player: Player, enemy: Npc):
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
         self.world_x = player.world_x
         self.world_y = player.world_y
@@ -330,10 +330,18 @@ class Projectile():
         if self.lifespan <= 0 or self.hasCollided:
             return False
         return True
-    
+    def get_screen_pos(self):
+        return (self.world_x - scroll_x, self.world_y - scroll_y)
+
     def draw(self, screen):
         screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
         screen.blit(self.image, (screen_x, screen_y))
+    
+    def handle(self):
+        self.goDir()
+        self.checkforlife()
+        self.draw()
+
     
 
 class invisEnemy(Npc):
@@ -465,7 +473,7 @@ def draw_wave_progress(screen, kills, total):
     text_rect = progress_text.get_rect(center=bg_rect.center)
     screen.blit(progress_text, text_rect)
 
-def draw_timer(screen, player: Player, curr_wave):
+def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time=None):
     if player.alive_start is None:
         elapsed = 0
     else:
@@ -475,9 +483,12 @@ def draw_timer(screen, player: Player, curr_wave):
                 player.alive_end = time.time()
             elapsed = int(player.alive_end - player.alive_start)
         else:
-            # herstart de timer
-            player.alive_end = None
-            elapsed = int(time.time() - player.alive_start)
+            now = time.time()
+            if paused and pause_start_time is not None:
+                # stop de timer tijdens pauze
+                elapsed = int(pause_start_time - player.alive_start)
+            else:
+                elapsed = int(now - player.alive_start)
 
     mins = elapsed // 60
     secs = elapsed % 60
@@ -488,6 +499,7 @@ def draw_timer(screen, player: Player, curr_wave):
     pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
     text_pos = text_surf.get_rect(center=bg_rect.center)
     screen.blit(text_surf, text_pos)
+
 
 def end_game():
     return Text("background/game_over.png")
@@ -513,7 +525,7 @@ def startnewave(currentwave, hearts):
         enemies.append(Boss())
     for _ in range(invis_enemy):
         enemies.append(invisEnemy())
-    margin = screen_size[0] // 2
+    margin = 50
 
     # twee regen hartjes bij per wave
     for _ in range(2):
@@ -661,8 +673,48 @@ def main():
             pygame.time.delay(int(duration * 350))
 
     running = True
+    paused = False
+    pause_start_time = None
+
     current_wave = 1
     while running:
+
+        player_dx = 0
+        player_dy = 0
+
+        if paused:
+            # Render huidig frame
+            renderFrame(screen, player, enemies, hearts, punchitbox, text)
+            draw_health(screen, player)
+            draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave)
+            draw_timer(screen, player, currentwave, paused, pause_start_time)
+            draw_minimap(screen, player, enemies, hearts)
+
+            # Teken mute-knop ook tijdens pauze
+            btn_color = (100, 220, 100) if music_on else (220, 100, 100)
+            pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
+            screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
+
+            # Overlay "PAUSED"
+            pause_text = font.render("PAUSED", True, (255, 255, 255))
+            screen.blit(pause_text, pause_text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2)))
+
+            pygame.display.flip()
+            clock.tick(60)
+
+    # Event-loop voor pauze
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    paused = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        paused = False
+                        if player.alive_start is not None and pause_start_time is not None:
+                            pause_duration = time.time() - pause_start_time
+                            player.alive_start += pause_duration
+            continue
+
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
 
@@ -671,6 +723,8 @@ def main():
         if held[pygame.K_LEFT] or held[pygame.K_q]: player_dx = -player.speed
         if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
+
+
 
         if enemies == list() and current_wave <= 4:
             print("NEW WAVE STARTING")
@@ -724,6 +778,18 @@ def main():
                     return main()
 
             elif event.type == pygame.KEYDOWN:
+                
+                if event.key == pygame.K_ESCAPE:
+                    paused = not paused
+
+                    if paused:
+                        pause_start_time = time.time()
+                    else:
+                    # Corrigeer timer zodat pauze niet meetelt
+                        if player.alive_start is not None:
+                            pause_duration = time.time() - pause_start_time
+                            player.alive_start += pause_duration
+
                 if player.get_hp() > 0:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         player.look_right()
