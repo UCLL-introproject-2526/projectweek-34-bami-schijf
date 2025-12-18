@@ -41,7 +41,7 @@ background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
 #allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,1,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -340,7 +340,7 @@ class Npc:
 
     def trace(self, player: Player):
         if self.hostile:
-            m = getDir((self.world_x - self.width // 2, self.world_y - self.width // 2), (player.world_x - player.width // 2, player.world_y - player.height // 2))
+            m = getDir((self.world_x + self.width // 2, self.world_y), (player.world_x, player.world_y - self.height // 2))
             self.world_x += m[0] * self.speed
             self.world_y += m[1] * self.speed
 
@@ -363,17 +363,18 @@ class Npc:
 
 class Projectile():
     def __init__(self,player : Player,enemy : Npc):
-        self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
-        print(self.dir)
+        
         self.world_x = player.world_x - player.width // 2
         self.world_y = player.world_y - player.height // 2
         self.width = 75
         self.height = 75
+        self.dir = getDir((self.world_x + self.width // 2, self.world_y - self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
+        print(self.dir)
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
         if player.world_x < enemy.world_x:
-            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
+            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90 + 90)
         else:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
         self.lifespan = 30
@@ -589,7 +590,7 @@ def end_game():
 def restart_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 40,
+        screen_size[1] // 2 + 160,
         200,
         50
     )
@@ -597,7 +598,7 @@ def restart_button_rect():
 def continue_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 160,
+        screen_size[1] // 2 + 240,
         200,
         50
     )
@@ -606,7 +607,7 @@ def continue_button_rect():
 def main_menu_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 160,
+        screen_size[1] // 2 + 80,
         200,
         50
     )
@@ -738,20 +739,20 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
 
 class Snowflake:
     def __init__(self):
-        self.x = randint(0, screen_size[0])
-        self.y = randint(-screen_size[1], 0)
+        self.x = randint(0, screen_size[0]) # start x-positie willekeurig over de volledige schermbreedte
+        self.y = randint(-screen_size[1], 0) # start y-positie boven het scherm
         self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
-        self.speed = uniform(1, 3)
+        self.speed = uniform(1, 3) #valsnelheid van sneeuw, kleine variaties voor realistisch effect
 
     def update(self, player_dx=0, player_dy=0):
-        self.y += self.speed
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
+        self.y += self.speed # sneeuwvlok valt verticaal naar beneden
+        self.x -= player_dx * 1.7 # parallax-effect, speler beweegt tegen de sneeuw in
+        self.y -= player_dy * 1.7 # parallax-effect, speler beweegt tegen de sneeuw in
         if self.y > screen_size[1]:
-            self.y = randint(-50, -10)
+            self.y = randint(-50, -10) # opnieuw boven het scherm
             self.x = randint(0, screen_size[0])
-            self.radius = randint(2, 6)
-            self.speed = uniform(1, 3) 
+            self.radius = randint(2, 6) # nieuwe grootte
+            self.speed = uniform(1, 3)  # nieuwe snelheid
 
     def draw(self, screen, minimap_rect):
         # alleen tekenen als het niet over de minimap valt
@@ -843,6 +844,7 @@ def main():
 
     current_wave = 1
     while running:
+
         player_dx = 0
         player_dy = 0
 
@@ -870,11 +872,23 @@ def main():
             pygame.display.flip() # update scherm
             clock.tick(60) #framerate behouden
 
-    # Event-loop voor pauze
+            # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
                     pygame.quit()
                     sys.exit()
+                # Sta muiskliks toe tijdens pauze voor menu/music
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if music_button_rect.collidepoint(event.pos):
+                        if music_on:
+                            pygame.mixer.music.pause()
+                            music_on = False
+                        else:
+                            pygame.mixer.music.unpause()
+                            music_on = True
+                    if menu_button_rect.collidepoint(event.pos):
+                        pygame.mixer.music.stop()
+                        return
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -918,6 +932,7 @@ def main():
             if pen_time <= 0:
                 pen_time = 60
                 near = player.get_nearest_enemy(enemies)
+                # geen error bij None want leest van links naar rechts
                 if not near is None and distanceSquared(near.world_x - player.world_x, near.world_y - player.world_y) < 400**2:
                     projectiles.append(Projectile(player,near))
                     print("added projectile")
@@ -1043,6 +1058,7 @@ def main():
                     if projectile.get_rect().colliderect(npc_rect):
                         npc.takedamage(50)    # pen damage
                         projectile.hasCollided = True
+                        dmg_sound.play()
                 #   voeg ananas toe met splash dmg
                 if npc.health <= 0:
                         if npc in enemies: 
@@ -1126,14 +1142,15 @@ def main():
 
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
+
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
-        snow_surface.fill((0, 0, 0, 0))
-        for snow in snowflakes:
-            snow.update(player_dx, player_dy)
+        snow_surface.fill((0, 0, 0, 0)) # transparante laag waarover ik de sneeuw wil plaatsen
+        for snow in snowflakes: # loop door alle sneeuw
+            snow.update(player_dx, player_dy) # parallax-effect wanneer speler beweegt
             snow.draw(snow_surface, MINIMAP_RECT)
 
-        screen.blit(snow_surface, (0, 0))
+        screen.blit(snow_surface, (0, 0)) # teken sneeuw op transparante sneeuwlaag
 
         flip()
 
