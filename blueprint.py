@@ -704,12 +704,24 @@ def main_menu():
         # draw semi-transparent buttons so they blend with background
         for rect, label in ((play_rect, "PLAY"), (quit_rect, "QUIT")):
             hover = rect.collidepoint(mpos)
+
+            # Button achtergrond
             btn_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-            base_alpha = 200 if hover else 140
-            btn_surf.fill((10, 10, 10, base_alpha))
-            pygame.draw.rect(btn_surf, (255,255,255,60), btn_surf.get_rect(), 2, border_radius=10)
+    
+            # Normale achtergrond (donkergrijs semi-transparant)
+            btn_surf.fill((10, 10, 10, 140))
+    
+            # Hoverkleur alleen binnen afgeronde hoeken
+            if hover:
+                hover_color = (196, 67, 45, 200)  # oranje met alpha 200
+                pygame.draw.rect(btn_surf, hover_color, btn_surf.get_rect(), border_radius=10)
+    
+            # Rand van de knop
+            pygame.draw.rect(btn_surf, (255, 255, 255, 60), btn_surf.get_rect(), 2, border_radius=10)
+
+            # Tekst altijd wit
+            txt = btn_font.render(label, True, (255, 255, 255))
             screen.blit(btn_surf, rect.topleft)
-            txt = btn_font.render(label, True, (240, 240, 240) if not hover else (20,20,20))
             screen.blit(txt, txt.get_rect(center=rect.center))
 
         pygame.display.flip()
@@ -936,7 +948,6 @@ def main():
                         if player.alive_start is not None and pause_start_time is not None:
                             pause_duration = time.time() - pause_start_time
                             player.alive_start += pause_duration
-            continue
 
         if enemies == list() and cangonextwave == True :
             cangonextwave = False
