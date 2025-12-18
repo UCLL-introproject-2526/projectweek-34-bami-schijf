@@ -513,7 +513,7 @@ def startnewave(currentwave, hearts):
         enemies.append(Boss())
     for _ in range(invis_enemy):
         enemies.append(invisEnemy())
-    margin = 50
+    margin = screen_size[0] // 2
 
     # twee regen hartjes bij per wave
     for _ in range(2):
