@@ -12,6 +12,7 @@ MINIMAP_PLAYER_COLOR = (255, 255, 0)
 MINIMAP_BORDER_COLOR = (200, 200, 200)
 
 screen_size = (1024, 768)
+highscore = 0
 
 MINIMAP_RECT = pygame.Rect(
     MINIMAP_PADDING,
@@ -372,6 +373,7 @@ class Projectile():
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
+        
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
@@ -544,6 +546,7 @@ def draw_wave_progress(screen, kills, total):
     screen.blit(progress_text, text_rect)
 
 def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time=None):
+    global highscore
     if player.alive_start is None:
         elapsed = 0
     else:
@@ -551,7 +554,15 @@ def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time
             # sla verstreken tijd op
             if player.alive_end is None:
                 player.alive_end = time.time()
-            elapsed = int(player.alive_end - player.alive_start)
+                elapsed_time = int(player.alive_end - player.alive_start)
+
+                # update highscore als het beter is
+                if elapsed_time > highscore:
+                    highscore = elapsed_time
+                    with open("highscore.txt", "w") as f:
+                        f.write(str(highscore))
+
+            elapsed = int(player.alive_end - player.alive_start) if player.alive_end else 0
         else:
             now = time.time()
             if paused and pause_start_time is not None:
@@ -738,20 +749,20 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
 
 class Snowflake:
     def __init__(self):
-        self.x = randint(0, screen_size[0])
-        self.y = randint(-screen_size[1], 0)
+        self.x = randint(0, screen_size[0]) # start x-positie willekeurig over de volledige schermbreedte
+        self.y = randint(-screen_size[1], 0) # start y-positie boven het scherm
         self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
-        self.speed = uniform(1, 3)
+        self.speed = uniform(1, 3) #valsnelheid van sneeuw, kleine variaties voor realistisch effect
 
     def update(self, player_dx=0, player_dy=0):
-        self.y += self.speed
-        self.x -= player_dx * 1.7
-        self.y -= player_dy * 1.7
+        self.y += self.speed # sneeuwvlok valt verticaal naar beneden
+        self.x -= player_dx * 1.7 # parallax-effect, speler beweegt tegen de sneeuw in
+        self.y -= player_dy * 1.7 # parallax-effect, speler beweegt tegen de sneeuw in
         if self.y > screen_size[1]:
-            self.y = randint(-50, -10)
+            self.y = randint(-50, -10) # opnieuw boven het scherm
             self.x = randint(0, screen_size[0])
-            self.radius = randint(2, 6)
-            self.speed = uniform(1, 3) 
+            self.radius = randint(2, 6) # nieuwe grootte
+            self.speed = uniform(1, 3)  # nieuwe snelheid
 
     def draw(self, screen, minimap_rect):
         # alleen tekenen als het niet over de minimap valt
@@ -796,6 +807,7 @@ def main():
     global punch_sound
     punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
 
+    global highscore
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40)
@@ -828,6 +840,7 @@ def main():
     except FileNotFoundError:
         highscore = 0
 
+
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
@@ -852,6 +865,7 @@ def main():
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
+            draw_highscore_left(screen, highscore) # toon highscore
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
@@ -1110,6 +1124,7 @@ def main():
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
+        draw_highscore_left(screen, highscore) # toon highscore
 
         if player.get_hp() <= 0 or currentwave == 5:
             if currentwave == 5 and player.get_hp() > 0:
@@ -1147,16 +1162,14 @@ def main():
 
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
-        snow_surface.fill((0, 0, 0, 0))
-        for snow in snowflakes:
-            snow.update(player_dx, player_dy)
+        snow_surface.fill((0, 0, 0, 0)) # transparante laag waarover ik de sneeuw wil plaatsen
+        for snow in snowflakes: # loop door alle sneeuw
+            snow.update(player_dx, player_dy) # parallax-effect wanneer speler beweegt
             snow.draw(snow_surface, MINIMAP_RECT)
 
-        screen.blit(snow_surface, (0, 0))
+        screen.blit(snow_surface, (0, 0)) # teken sneeuw op transparante sneeuwlaag
 
         flip()
-
-    # do not quit here; let the top-level block control quitting
 
 if __name__ == "__main__":
     while True:
