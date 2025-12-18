@@ -357,9 +357,19 @@ class Projectile():
             return False
         return True
     
+    def get_screen_pos(self):
+        return (self.world_x - scroll_x, self.world_y - scroll_y)
+
+
     def draw(self, screen):
-        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        screen_x, screen_y = self.get_screen_pos()
         screen.blit(self.image, (screen_x, screen_y))
+    
+    def handle(self):
+        self.goDir()
+        self.draw(screen)
+        print(self.lifespan)
+        return self.checkforlife()
     
 
 class invisEnemy(Npc):
@@ -764,6 +774,10 @@ def main():
                 invincible = False
         clock.tick(60)
         pygame.event.pump()
+        for i in range(len(projectiles)-1,-1,-1):
+            if not projectiles[i].handle():
+                projectiles.pop(i)
+            
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -775,28 +789,10 @@ def main():
                     else:
                         pygame.mixer.music.unpause()
                         music_on = True
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if music_button_rect.collidepoint(event.pos):
-                    if music_on:
-                        pygame.mixer.music.pause()
-                        music_on = False
-                    else:
-                        pygame.mixer.music.unpause()
-                        music_on = True
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if music_button_rect.collidepoint(event.pos):
-                    if music_on:
-                        pygame.mixer.music.pause()
-                        music_on = False
-                    else:
-                        pygame.mixer.music.unpause()
-                        music_on = True
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if restart_button_rect().collidepoint(event.pos):
                     return main()
+
+                
 
             elif event.type == pygame.KEYDOWN:
                 
@@ -818,6 +814,10 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
+                            near = player.get_nearest_enemy(enemies)
+                            if not near is None:
+                                projectiles.append(Projectile(player,near))
+                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
