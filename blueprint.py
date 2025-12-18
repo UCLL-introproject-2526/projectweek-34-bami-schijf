@@ -4,7 +4,7 @@ import sys
 import os
 from pygame.display import flip
 from random import randint, choice, uniform
-from math import inf, asin
+import math
 
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
@@ -123,7 +123,7 @@ class Player:
         self.alive_end = None   # timer einde bij dood
 
     def getNearestEnemy(self, enemies: list):
-        min = inf
+        min = math.inf
         nearest = None
         for enemy in enemies:
             temp = distanceSquared(self.world_x - enemy.world_x, self.world_y - enemy.world_y)
@@ -265,7 +265,7 @@ class Player:
             return None
 
         nearest = None
-        min_dist = float("inf")
+        min_dist = math.inf
         for enemy in enemies:
             if enemy.hostile:
                 dx = enemy.world_x - self.world_x
@@ -369,16 +369,16 @@ class Projectile():
         self.world_x = player.world_x - player.width // 2
         self.world_y = player.world_y - player.height // 2
         self.width = 75
-        self.height = 75
-        self.dir = getDir((self.world_x + player.width, self.world_y + self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
+        self.height = 100
+        self.dir = getDir((self.world_x + player.width // 2, self.world_y + self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
         print(self.dir)
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
-        if player.world_x < enemy.world_x:
-            self.image = pygame.transform.rotate(self.image, asin(-self.dir[1])*90+90)
-        else:
-            self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90-90)
+        print(math.asin(self.dir[1])*180+90)
+
+        self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0])) + 90
+        self.image = pygame.transform.rotate(self.image,self.angle)
         self.lifespan = 30
         self.speed = 10
         self.hasCollided = False
@@ -419,7 +419,7 @@ class invisEnemy(Npc):
         super().__init__()
         self.width, self.height = 0,0
         self.hostile = False
-        self.health = inf
+        self.health = math.inf
 
 class Labubu(Npc):
     def __init__(self):
@@ -1107,7 +1107,7 @@ def main():
             for projectile in projectiles:
                 if projectile.isPen and not projectile.hasCollided:
                     if projectile.get_rect().colliderect(npc_rect):
-                        npc.takedamage(50)    # pen damage
+                        npc.takedamage(0)    # pen damage
                         projectile.hasCollided = True
                         dmg_sound.play()
                 #   voeg ananas toe met splash dmg
