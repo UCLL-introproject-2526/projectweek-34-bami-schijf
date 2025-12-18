@@ -329,6 +329,8 @@ class Projectile():
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
         self.world_x = player.world_x
         self.world_y = player.world_y
+        self.width = 30
+        self.height = 30
         self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
         self.lifespan = 100
         self.speed = 10
@@ -355,7 +357,7 @@ class Projectile():
     def handle(self):
         self.goDir()
         self.draw(screen)
-        print(self.lifespan)
+        print(self.world_x, self.world_y)
         return self.checkforlife()
     
 
@@ -452,6 +454,8 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
             obj.draw(screen)
     for heart in hearts:
         heart.draw(screen, scroll_x, scroll_y)
+    for projectile in projectiles:
+        projectile.draw(screen)
     player.draw(screen)
     if text:
         text.draw(screen)
