@@ -371,10 +371,7 @@ class Projectile():
         self.height = 75
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-<<<<<<< HEAD
-=======
         self.lifespan = 60
->>>>>>> 4fa91c32068c0a9bc2e2696815fe1c89f1daa87c
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
@@ -831,10 +828,6 @@ def main():
     except FileNotFoundError:
         highscore = 0
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 4fa91c32068c0a9bc2e2696815fe1c89f1daa87c
     def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
@@ -1119,16 +1112,18 @@ def main():
         draw_minimap(screen, player, enemies, hearts)
 
         if player.get_hp() <= 0 or currentwave == 5:
+            if currentwave == 5 and player.get_hp() > 0:
+                btn2 = continue_button_rect()
+                txt2 = font.render("CONTINUE", True, (0,0,0))
+                pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
+                screen.blit(txt2, txt2.get_rect(center=btn2.center))
+
             btn = restart_button_rect()
-            btn2 = continue_button_rect()
 
             pygame.draw.rect(screen, (200, 200, 200), btn, border_radius=8)
-            pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
 
             txt = font.render("RESTART", True, (0,0,0))
-            txt2 = font.render("CONTINUE", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
-            screen.blit(txt2, txt2.get_rect(center=btn2.center))
             # MAIN MENU button under restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
