@@ -2,6 +2,7 @@ import pygame
 import time
 from pygame.display import flip
 from random import randint, choice, uniform
+from math import inf
 
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
@@ -37,9 +38,12 @@ punchitbox = None
 global cangonextwave 
 cangonextwave = True
 
+def distanceSquared(dx: int, dy:int):
+    return dx**2 + dy**2
+
 def getDir(selfCoords: tuple, playerCoords: tuple):
     dx, dy = playerCoords[0] - selfCoords[0], playerCoords[1] - selfCoords[1]
-    size = (dx**2 + dy**2)**(1/2)
+    size = distanceSquared(dx, dy)**(1/2)
     return (dx/size, dy/size)
 
 
@@ -107,7 +111,15 @@ class Player:
         self.alive_start = None
         self.alive_end = None
 
-
+    def getNearestEnemy(self, enemies: list):
+        min = inf
+        nearest = None
+        for enemy in enemies:
+            temp = distanceSquared(self.world_x - enemy.world_x, self.world_y - enemy.world_y)
+            if temp < min:
+                min = temp
+                nearest = enemy
+        return nearest
 
     def draw(self, screen):
         self.draw_shadow(screen)
@@ -139,6 +151,8 @@ class Player:
         else:
             dmg = 5
         self.__health -= dmg
+        if self.__health < 0:
+            self.__health = 0
     
     def regen_hp(self, regen):
         self.__health += regen
@@ -320,7 +334,6 @@ class Projectile():
         self.speed = 10
         self.hasCollided = False
 
-
     def goDir(self):
         self.world_x += self.speed * self.dir[0]
         self.world_y += self.speed * self.dir[1]
@@ -465,7 +478,7 @@ def draw_wave_progress(screen, kills, total):
     text_rect = progress_text.get_rect(center=bg_rect.center)
     screen.blit(progress_text, text_rect)
 
-def draw_timer(screen, player: Player, curr_wave):
+def draw_timer(screen, player: Player, curr_wave, paused=False, pause_start_time=None):
     if player.alive_start is None:
         elapsed = 0
     else:
@@ -475,9 +488,12 @@ def draw_timer(screen, player: Player, curr_wave):
                 player.alive_end = time.time()
             elapsed = int(player.alive_end - player.alive_start)
         else:
-            # herstart de timer
-            player.alive_end = None
-            elapsed = int(time.time() - player.alive_start)
+            now = time.time()
+            if paused and pause_start_time is not None:
+                # stop de timer tijdens pauze
+                elapsed = int(pause_start_time - player.alive_start)
+            else:
+                elapsed = int(now - player.alive_start)
 
     mins = elapsed // 60
     secs = elapsed % 60
@@ -488,6 +504,7 @@ def draw_timer(screen, player: Player, curr_wave):
     pygame.draw.rect(screen, (0, 0, 0), bg_rect, border_radius=6)
     text_pos = text_surf.get_rect(center=bg_rect.center)
     screen.blit(text_surf, text_pos)
+
 
 def end_game():
     return Text("background/game_over.png")
@@ -513,7 +530,7 @@ def startnewave(currentwave, hearts):
         enemies.append(Boss())
     for _ in range(invis_enemy):
         enemies.append(invisEnemy())
-    margin = 50
+    margin = screen_size[0] // 2
 
     # twee regen hartjes bij per wave
     for _ in range(2):
@@ -661,6 +678,9 @@ def main():
             pygame.time.delay(int(duration * 350))
 
     running = True
+    paused = False
+    pause_start_time = None
+
     current_wave = 1
     while running:
 
@@ -712,6 +732,8 @@ def main():
         if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
         if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
 
+
+
         if enemies == list() and current_wave <= 4:
             print("NEW WAVE STARTING")
             # toon overlay van de nieuwe wave
@@ -729,8 +751,6 @@ def main():
                 invincible = False
         clock.tick(60)
         pygame.event.pump()
-        for projectile in projectiles:
-            projectile.handle()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -766,6 +786,18 @@ def main():
                     return main()
 
             elif event.type == pygame.KEYDOWN:
+                
+                if event.key == pygame.K_ESCAPE:
+                    paused = not paused
+
+                    if paused:
+                        pause_start_time = time.time()
+                    else:
+                    # Corrigeer timer zodat pauze niet meetelt
+                        if player.alive_start is not None:
+                            pause_duration = time.time() - pause_start_time
+                            player.alive_start += pause_duration
+
                 if player.get_hp() > 0:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         player.look_right()
@@ -773,7 +805,6 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
-                            projectiles.append(Projectile(player,player.get_nearest_enemy(enemies)))
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
