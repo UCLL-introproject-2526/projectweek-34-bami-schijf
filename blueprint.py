@@ -372,6 +372,7 @@ class Projectile():
         self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
         self.lifespan = 60
+        
         if player.world_x < enemy.world_x:
             self.image = pygame.transform.rotate(self.image, asin(self.dir[1])*90+90)
         else:
@@ -589,7 +590,7 @@ def end_game():
 def restart_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 40,
+        screen_size[1] // 2 + 160,
         200,
         50
     )
@@ -597,7 +598,7 @@ def restart_button_rect():
 def continue_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 160,
+        screen_size[1] // 2 + 240,
         200,
         50
     )
@@ -606,7 +607,7 @@ def continue_button_rect():
 def main_menu_button_rect():
     return pygame.Rect(
         screen_size[0] // 2 - 100,
-        screen_size[1] // 2 + 160,
+        screen_size[1] // 2 + 80,
         200,
         50
     )
@@ -843,6 +844,7 @@ def main():
 
     current_wave = 1
     while running:
+
         player_dx = 0
         player_dy = 0
 
@@ -870,11 +872,23 @@ def main():
             pygame.display.flip() # update scherm
             clock.tick(60) #framerate behouden
 
-    # Event-loop voor pauze
+            # Event-loop voor pauze (laat menu en muziekknop werken)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: # gebruiker sluit het spel
                     pygame.quit()
                     sys.exit()
+                # Sta muiskliks toe tijdens pauze voor menu/music
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if music_button_rect.collidepoint(event.pos):
+                        if music_on:
+                            pygame.mixer.music.pause()
+                            music_on = False
+                        else:
+                            pygame.mixer.music.unpause()
+                            music_on = True
+                    if menu_button_rect.collidepoint(event.pos):
+                        pygame.mixer.music.stop()
+                        return
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -980,6 +994,10 @@ def main():
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
+                            near = player.get_nearest_enemy(enemies)
+                            if not near is None:
+                                projectiles.append(Projectile(player,near))
+                                print("added projectile")
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
@@ -1126,6 +1144,7 @@ def main():
 
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
+
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
         snow_surface.fill((0, 0, 0, 0)) # transparante laag waarover ik de sneeuw wil plaatsen
