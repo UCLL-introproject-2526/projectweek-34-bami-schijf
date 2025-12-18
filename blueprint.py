@@ -177,25 +177,25 @@ class Player:
     def up(self):
         global scroll_y
         self.world_y -= self.speed
-        self.world_y = max(0, min(self.world_y, background_height - self.height))
+        self.world_y = max(screen_size[1] // 2, min(self.world_y, background_height - self.height))
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def down(self):
         global scroll_y
         self.world_y += self.speed
-        self.world_y = max(0, min(self.world_y, background_height - self.height))
+        self.world_y = min(background_height - screen_size[1] // 2, min(self.world_y, background_height - self.height))
         scroll_y = max(0, min(self.world_y - screen_size[1] // 2, background_height - screen_size[1]))
 
     def left(self):
         global scroll_x
         self.world_x -= self.speed
-        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        self.world_x = max(screen_size[0] // 2, min(self.world_x, background_width - self.width))
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def right(self):
         global scroll_x
         self.world_x += self.speed
-        self.world_x = max(0, min(self.world_x, background_width - self.width))
+        self.world_x = min(background_width - screen_size[0] // 2 , min(self.world_x, background_width - self.width))
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
 
     def look_left(self):
@@ -329,8 +329,11 @@ class Projectile():
         self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
         self.world_x = player.world_x
         self.world_y = player.world_y
+        self.width = 10
+        self.height = 10
         self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
-        self.lifespan = 100
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.lifespan = 60
         self.speed = 10
         self.hasCollided = False
 
@@ -355,7 +358,7 @@ class Projectile():
     def handle(self):
         self.goDir()
         self.draw(screen)
-        print(self.lifespan)
+        print(self.world_x, self.world_y)
         return self.checkforlife()
     
 
@@ -437,7 +440,7 @@ class Text:
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
-def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, text=None):
+def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, projectiles: list, text=None):
     screen.blit(background_image, (0, 0), area=pygame.Rect(scroll_x, scroll_y, screen_size[0], screen_size[1]))
     
     drawables = npcs[:] # lijst kopie
@@ -699,7 +702,7 @@ def main():
 
         if paused:
             # Render huidig frame
-            renderFrame(screen, player, enemies, hearts, punchitbox, text)
+            renderFrame(screen, player, enemies, hearts, punchitbox, projectiles, text)
             # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
             draw_health(screen, player) # hp 
             draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
@@ -903,7 +906,7 @@ def main():
                     player.image = player.sprites["left"]
                 player.punching = False
 
-        renderFrame(screen, player, enemies, hearts, punchitbox, text)
+        renderFrame(screen, player, enemies, hearts, punchitbox, projectiles, text)
         draw_health(screen, player)
         draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) 
         draw_timer(screen, player, currentwave)
