@@ -690,10 +690,11 @@ def main():
         if paused:
             # Render huidig frame
             renderFrame(screen, player, enemies, hearts, punchitbox, text)
-            draw_health(screen, player)
-            draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave)
-            draw_timer(screen, player, currentwave, paused, pause_start_time)
-            draw_minimap(screen, player, enemies, hearts)
+            # tekst en interface elementen behouden, anders vallen die weg wanneer op pauze
+            draw_health(screen, player) # hp 
+            draw_wave_progress(screen, kills_this_wave, total_enemies_in_wave) # wave progress
+            draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
+            draw_minimap(screen, player, enemies, hearts) # toon minimap
 
             # Teken mute-knop ook tijdens pauze
             btn_color = (100, 220, 100) if music_on else (220, 100, 100)
@@ -704,17 +705,19 @@ def main():
             pause_text = font.render("PAUSED", True, (255, 255, 255))
             screen.blit(pause_text, pause_text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2)))
 
-            pygame.display.flip()
-            clock.tick(60)
+            pygame.display.flip() # update scherm
+            clock.tick(60) #framerate behouden
 
     # Event-loop voor pauze
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT: # gebruiker sluit het spel
                     running = False
                     paused = False
                 elif event.type == pygame.KEYDOWN:
+                    # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
                         paused = False
+                        # corrigeer de timer zodat de tijd tijdens pauze niet meetelt
                         if player.alive_start is not None and pause_start_time is not None:
                             pause_duration = time.time() - pause_start_time
                             player.alive_start += pause_duration
