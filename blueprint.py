@@ -566,6 +566,15 @@ def restart_button_rect():
         50
     )
 
+
+def main_menu_button_rect():
+    return pygame.Rect(
+        screen_size[0] // 2 - 100,
+        screen_size[1] // 2 + 160,
+        200,
+        50
+    )
+
 def startnewave(currentwave, hearts):
     enemies = []
     fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave)
@@ -588,6 +597,72 @@ def startnewave(currentwave, hearts):
         hearts.append(Heart(x, y))
     
     return enemies
+
+
+def main_menu():
+    menu_clock = pygame.time.Clock()
+    btn_font = pygame.font.SysFont("arialblack", 36)
+    play_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 - 40, 200, 50)
+    quit_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 + 30, 200, 50)
+    # try to load background image for main menu; fallback to solid fill
+    try:
+        menu_bg = pygame.image.load("background/Main menu.png").convert()
+        menu_bg = pygame.transform.smoothscale(menu_bg, screen_size)
+    except Exception:
+        menu_bg = None
+
+    while True:
+        mpos = pygame.mouse.get_pos()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if play_rect.collidepoint(event.pos):
+                    return True
+                if quit_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    return False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    return False
+                if event.key == pygame.K_RETURN:
+                    return True
+
+        # background
+        if menu_bg:
+            screen.blit(menu_bg, (0, 0))
+        else:
+            screen.fill((20, 20, 40))
+
+        # draw semi-transparent buttons so they blend with background
+        for rect, label in ((play_rect, "PLAY"), (quit_rect, "QUIT")):
+            hover = rect.collidepoint(mpos)
+            btn_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+            base_alpha = 200 if hover else 140
+            btn_surf.fill((10, 10, 10, base_alpha))
+            pygame.draw.rect(btn_surf, (255,255,255,60), btn_surf.get_rect(), 2, border_radius=10)
+            screen.blit(btn_surf, rect.topleft)
+            txt = btn_font.render(label, True, (240, 240, 240) if not hover else (20,20,20))
+            screen.blit(txt, txt.get_rect(center=rect.center))
+
+        pygame.display.flip()
+        menu_clock.tick(60)
+
+
+def draw_menu_button(surface, rect, hover=False):
+    bg = (210, 210, 210) if not hover else (190, 190, 190)
+    line_color = (30, 30, 30)
+    pygame.draw.rect(surface, bg, rect, border_radius=8)
+    # draw three horizontal lines for a cleaner 'menu' icon
+    cx, cy = rect.center
+    line_w = int(rect.width * 0.45)
+    spacing = 6
+    start_x = cx - line_w // 2
+    for offset in (-spacing, 0, spacing):
+        y = cy + offset
+        pygame.draw.line(surface, line_color, (start_x, y), (start_x + line_w, y), 3)
 
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
 MINIMAP_UPDATE_INTERVAL = 8
@@ -690,17 +765,9 @@ def main():
 
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
     mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
-    music_on = True
-
-    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
-    mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
-    music_on = True
-
-    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
-    mute_img = pygame.transform.scale(mute_img, (40, 40))
-    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40)
+    menu_button_rect = pygame.Rect(screen_size[0] - 110, 20, 40, 40)
+    small_font = pygame.font.SysFont("arialblack", 20)
     music_on = True
     foo = True
     flash_timer = 0
@@ -755,7 +822,10 @@ def main():
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
 
-            # Teken mute-knop ook tijdens pauze
+            # Teken mute-knop ook tijdens pauze + menu knop
+            mpos = pygame.mouse.get_pos()
+            hover = menu_button_rect.collidepoint(mpos)
+            draw_menu_button(screen, menu_button_rect, hover=hover)
             btn_color = (100, 220, 100) if music_on else (220, 100, 100)
             pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
             screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
@@ -825,6 +895,12 @@ def main():
                     else:
                         pygame.mixer.music.unpause()
                         music_on = True
+                if menu_button_rect.collidepoint(event.pos):
+                    pygame.mixer.music.stop()
+                    return
+                if main_menu_button_rect().collidepoint(event.pos):
+                    pygame.mixer.music.stop()
+                    return
                 if restart_button_rect().collidepoint(event.pos):
                     return main()
 
@@ -988,6 +1064,11 @@ def main():
 
             txt = font.render("RESTART", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
+            # MAIN MENU button under restart
+            main_btn = main_menu_button_rect()
+            pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
+            main_txt = font.render("MAIN MENU", True, (0,0,0))
+            screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
 
         if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
@@ -996,19 +1077,24 @@ def main():
             screen.blit(overlay, (0,0))
             flash_timer -= 1
 
+        # draw menu button (with hover) and music button
+        mpos = pygame.mouse.get_pos()
+        hover = menu_button_rect.collidepoint(mpos)
+        draw_menu_button(screen, menu_button_rect, hover=hover)
+
         btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
         pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
-
         screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
 
-        btn_color = (100, 220, 100) if music_on else (220, 100, 100)  # groen = audio aan, rood = audio uit
-        pygame.draw.rect(screen, btn_color, music_button_rect, border_radius=6)
-
-        screen.blit(mute_img, (music_button_rect.x, music_button_rect.y))
-            
         flip()
 
-    pygame.quit()
+    # do not quit here; let the top-level block control quitting
 
 if __name__ == "__main__":
-    main()
+    while True:
+        start = main_menu()
+        if start:
+            main()
+        else:
+            break
+    pygame.quit()
