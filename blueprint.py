@@ -48,7 +48,6 @@ enemies = []
 punchitbox = None
 global cangonextwave 
 cangonextwave = True
-cancontinue = False
 
 def distanceSquared(dx: int, dy:int):
     return dx**2 + dy**2
@@ -627,7 +626,6 @@ def continue_button_rect():
         200,
         50
     )
-    cancontinue = False
 
 def main_menu_button_rect():
     return pygame.Rect(
@@ -651,7 +649,6 @@ def startnewave(currentwave, hearts):
         enemies.append(Boss())
     for _ in range(invis_enemy):
         enemies.append(invisEnemy())
-        cancontinue = True
     margin = screen_size[0] // 2
 
     # twee regen hartjes bij per wave
@@ -1168,7 +1165,7 @@ def main():
         draw_highscore_left(screen, highscore) # toon highscore
 
         if player.get_hp() <= 0 or currentwave == 5:
-            if currentwave == 5 and player.get_hp() > 0 and cancontinue == True:
+            if currentwave == 5 and player.get_hp() > 0:
                 btn2 = continue_button_rect()
                 txt2 = font.render("CONTINUE", True, (0,0,0))
                 pygame.draw.rect(screen, (200, 200, 200), btn2, border_radius=8)
