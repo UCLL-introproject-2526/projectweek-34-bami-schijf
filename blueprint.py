@@ -263,7 +263,7 @@ class hitBox:
         y = self.player.world_y + self.player.height // 3
 
         return pygame.Rect(x, y, self.size[0], self.size[1])
-
+    
 class Npc:
     def __init__(self):
         self.world_x, self.world_y = randint(screen_size[0]//2, background_width-screen_size[0]//2), randint(screen_size[1]//2, background_height-screen_size[1]//2)
@@ -312,6 +312,30 @@ class Npc:
         else:
             self.health -= amount
 
+class Projectile():
+    def __init__(self,player : Player,enemy : Npc):
+        self.dir = getDir((player.world_x, player.world_y), (enemy.world_x, enemy.world_y))
+        self.world_x = player.world_x
+        self.world_y = player.world_y
+        self.image = pygame.image.load("sprites\Heart - sprite\heart.png").convert_alpha()
+        self.lifespan = 100
+        self.speed = 10
+        self.hasCollided = False
+
+    def goDir(self):
+        self.world_x += self.speed * self.dir[0]
+        self.world_y += self.speed * self.dir[1]
+        self.lifespan -= 1 
+    
+    def checkforlife(self):
+        if self.lifespan <= 0 or self.hasCollided:
+            return False
+        return True
+    
+    def draw(self, screen):
+        screen_x, screen_y = self.get_screen_pos(scroll_x, scroll_y)
+        screen.blit(self.image, (screen_x, screen_y))
+    
 
 class invisEnemy(Npc):
     def __init__(self):
@@ -404,7 +428,7 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
     for obj in drawables:
         if obj.hostile:         # exclude invisible enemy
             obj.draw(screen)
-    for heart in hearts:        #tekent elk hartje op het veld
+    for heart in hearts:
         heart.draw(screen, scroll_x, scroll_y)
     player.draw(screen)
     if text:
@@ -415,44 +439,31 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, t
 def draw_health(screen, player: Player):
     padding = 8
 
-    # huidige hp en max hp tonen
     hp_text = font.render(
         f"HP: {player.get_hp()} / {player.get_maxHp()}",
         True,
-        (220,30,30) # rode kleur
+        (220,30,30)
     )
 
-    # linksboven op scherm
     bg_rect = hp_text.get_rect(topleft=(20,20))
-    # rechthoek groter dan tekst 
     bg_rect.inflate_ip(padding*2, padding*2)
 
-    # grijze achtergrond voor leesbaarheid
     pygame.draw.rect(screen, (180,180,180), bg_rect, border_radius=6)
 
-    # tekst gecentreerd in rechthoek
     text_rect = hp_text.get_rect(center=bg_rect.center)
-    # tekst op scherm tekenen
     screen.blit(hp_text, text_rect)
 
 def draw_wave_progress(screen, kills, total):
-    # als er geen vijanden zijn
     if total <= 0:
         progress = 0
     else:
-        # percentage berekenen, aantal gedode vijanden / totaal aantal vijanden * 100
         progress = int(kills / total * 100)
     
-    # tekstobject met het berekende percentage
     progress_text = font.render(f"Wave Progress: {progress}%", True, (255, 255, 255))
-    # positie van de tekst
     bg_rect = progress_text.get_rect(topleft=(15, 80)) 
-    # rechthoek rond de tekst groter dan de tekst zelf
     bg_rect.inflate_ip(8, 8)
     pygame.draw.rect(screen, (50, 50, 50), bg_rect, border_radius=6)
-    # tekst gecentreerd in de rechthoek
     text_rect = progress_text.get_rect(center=bg_rect.center)
-    # tekst op scherm tekenen
     screen.blit(progress_text, text_rect)
 
 def draw_timer(screen, player: Player, curr_wave):
@@ -513,132 +524,83 @@ def startnewave(currentwave, hearts):
     
     return enemies
 
-# We maken een verkleinde versie van de achtergrond
 MINIMAP_BG = pygame.transform.smoothscale(background_image, MINIMAP_SIZE)
-
-# Hoe vaak de minimap eventueel geüpdatet wordt
 MINIMAP_UPDATE_INTERVAL = 8
 minimap_timer = 0
-
 def draw_minimap(screen, player: Player, npcs: list, hearts: list):
-
-    # Linksonder op het scherm:
+    # positie linksonder
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
-    # Rectangle die exact de minimap voorstelt
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
-
-    # Achtergrondkleur van de minimap
+    minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
+    # achtergrond minimap
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
-
-    # Rand rond de minimap
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
 
-    # Getekende achtergrondafbeelding in de minimap
+
     screen.blit(MINIMAP_BG, (x, y))
 
-    # Deze factoren zetten wereldcoördinaten om naar minimap-coördinaten
+    # schaal factor
     scale_x = MINIMAP_SIZE[0] / background_width
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
-        # Wereldpositie → minimap-positie
         mini_npc_x = x + int(npc.world_x * scale_x)
         mini_npc_y = y + int(npc.world_y * scale_y)
-
-        # NPC wordt voorgesteld als een klein groen vierkantje
-        pygame.draw.rect(screen, (0, 200, 0),
-                         (mini_npc_x, mini_npc_y, 4, 4))
-
+        # Kleine rechthoek of cirkel als representatie
+        pygame.draw.rect(screen, (0,200,0), (mini_npc_x, mini_npc_y, 4, 4))
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
         mini_y = y + int(heart.world_y * scale_y)
-
-        # Hartjes worden voorgesteld als kleine rode cirkels
         pygame.draw.circle(screen, (255, 0, 0), (mini_x, mini_y), 3)
-
+    # speler positie
     px = x + int(player.world_x * scale_x)
     py = y + int(player.world_y * scale_y)
-
-    # Speler is duidelijk groter dan andere objecten
     pygame.draw.circle(screen, MINIMAP_PLAYER_COLOR, (px, py), 5)
 
 
-
-def __init__(self):
-    # Startpositie van het sneeuwdeeltje
-    self.x = randint(0, screen_size[0])
-    self.y = randint(-screen_size[1], 0)
-
-    # Grootte van de sneeuwvlok
-    self.radius = randint(2, 6)
-
-    # Snelheid waarmee de sneeuw naar beneden valt
-    self.speed = uniform(1, 3)
-
-
-def update(self, player_dx=0, player_dy=0):
-    # Sneeuw beweegt standaard naar beneden
-    self.y += self.speed
-
-    # Beweging van de speler beïnvloedt de sneeuw
-    self.x -= player_dx * 1.7
-    self.y -= player_dy * 1.7
-
-    # Als sneeuw onder het scherm verdwijnt,
-    # wordt het opnieuw bovenaan gespawned
-    if self.y > screen_size[1]:
-        self.y = randint(-50, -10)
+    def __init__(self):
         self.x = randint(0, screen_size[0])
-
-        # Nieuwe random eigenschappen
-        self.radius = randint(2, 6)
+        self.y = randint(-screen_size[1], 0)
+        self.radius = randint(2, 6)  # max grootte vergelijkbaar met speler
         self.speed = uniform(1, 3)
 
+    def update(self, player_dx=0, player_dy=0):
+        self.y += self.speed
+        self.x -= player_dx * 1.7
+        self.y -= player_dy * 1.7
+        self.x -= player_dx * 1.7
+        self.y -= player_dy * 1.7
+        if self.y > screen_size[1]:
+            self.y = randint(-50, -10)
+            self.x = randint(0, screen_size[0])
+            self.radius = randint(2, 6)
+            self.speed = uniform(1, 3) 
+            self.speed = uniform(1, 3) 
 
-def draw(self, screen, minimap_rect):
-    # We tekenen sneeuw NIET boven de minimap
-    if not minimap_rect.collidepoint(self.x, self.y):
-        pygame.draw.circle(
-            screen,
-            (255, 255, 255),
-            (int(self.x), int(self.y)),
-            self.radius
-        )
+    def draw(self, screen, minimap_rect):
+        # alleen tekenen als het niet over de minimap valt
+        if not minimap_rect.collidepoint(self.x, self.y):
+            pygame.draw.circle(screen, (255,255,255), (int(self.x), int(self.y)), self.radius)
+
 class Heart:
     def __init__(self, x, y):
-        # Positie in de wereld
         self.world_x = x
         self.world_y = y
 
-        # Hoeveel leven dit hart geeft
         self.amount = 1
 
-        # Grootte van het sprite
         self.width = 32
         self.height = 32
 
-        # Afbeelding laden en schalen
         self.image = pygame.image.load("sprites/Heart - sprite/heart.png").convert_alpha()
-        self.image = pygame.transform.scale(
-            self.image, (self.width, self.height)
-        )
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def draw(self, screen, scroll_x, scroll_y):
-        # Tekenen rekening houdend met camera/scroll
         screen.blit(
             self.image,
             (self.world_x - scroll_x, self.world_y - scroll_y)
-        )
-
-    def get_rect(self):
-        # Rect voor collision detection
-        return pygame.Rect(
-            self.world_x,
-            self.world_y,
-            self.width,
-            self.height
         )
 
     def get_rect(self):
@@ -665,6 +627,15 @@ def main():
     music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
     music_on = True
 
+    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
+    mute_img = pygame.transform.scale(mute_img, (40, 40))
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_on = True
+
+    mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
+    mute_img = pygame.transform.scale(mute_img, (40, 40))
+    music_button_rect = pygame.Rect(screen_size[0] - 60, 20, 40, 40) 
+    music_on = True
     foo = True
     flash_timer = 0
     flash_duration = 3
@@ -678,6 +649,7 @@ def main():
     kills_this_wave = 0  # aantal kills in de huidige wave
     total_enemies_in_wave = sum(allenemywaves.get(currentwave))  # totaal aantal enemies in deze wave
     hearts = []  # start lege lijst
+    projectiles = []
     currentwave = 1
     enemies = startnewave(currentwave, hearts)
 
@@ -719,21 +691,34 @@ def main():
         clock.tick(60)
         pygame.event.pump()
         for event in pygame.event.get():
-            # als gebruiker op mute-knop klikt
             if event.type == pygame.QUIT:
                 running = False
-            # controleert of muisknop is ingeklikt
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
-                        # muziek pauzeren indien ingeklikt
                         pygame.mixer.music.pause()
-                        music_on = False # status bijhouden
+                        music_on = False
                     else:
-                        # muziek hervatten
                         pygame.mixer.music.unpause()
-                        music_on = True # status bijhouden
+                        music_on = True
 
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if music_button_rect.collidepoint(event.pos):
+                    if music_on:
+                        pygame.mixer.music.pause()
+                        music_on = False
+                    else:
+                        pygame.mixer.music.unpause()
+                        music_on = True
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if music_button_rect.collidepoint(event.pos):
+                    if music_on:
+                        pygame.mixer.music.pause()
+                        music_on = False
+                    else:
+                        pygame.mixer.music.unpause()
+                        music_on = True
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if restart_button_rect().collidepoint(event.pos):
