@@ -193,7 +193,7 @@ class Player:
 
     def draw(self, screen):
         self.draw_shadow(screen)
-        # Always draw player at the center of the screen
+        # teken speler altijd in midden van scherm
         screen.blit(
             self.image,
             (self.screen_x + self.draw_offset_x, self.screen_y)
@@ -626,7 +626,7 @@ def renderFrame(screen, player: Player, npcs: list, hearts: list, hit: hitBox, p
             obj.draw_shadow(screen)
 
     for obj in drawables:
-        if obj.hostile:         # exclude invisible enemy
+        if obj.hostile:   
             obj.draw(screen)
     for heart in hearts:
         heart.draw(screen, scroll_x, scroll_y)
@@ -848,7 +848,6 @@ async def main_menu():
     btn_font = pygame.font.SysFont("arialblack", 36)
     play_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 - 40, 200, 50)
     quit_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 + 30, 200, 50)
-    # try to load background image for main menu; fallback to solid fill
     try:
         menu_bg = pygame.image.load("background/Main menu.png").convert()
         menu_bg = pygame.transform.smoothscale(menu_bg, screen_size)
@@ -877,13 +876,13 @@ async def main_menu():
                 if event.key == pygame.K_RETURN:
                     return True
 
-        # background
+        # achtergrond
         if menu_bg:
             screen.blit(menu_bg, (0, 0))
         else:
             screen.fill((20, 20, 40))
 
-        # draw semi-transparent buttons so they blend with background
+        # knoppen die inblenden met achtergrond
         for rect, label in ((play_rect, "PLAY"), (quit_rect, "QUIT")):
             hover = rect.collidepoint(mpos)
 
@@ -919,7 +918,7 @@ def draw_menu_button(surface, rect, hover=False):
     bg = (210, 210, 210) if not hover else (190, 190, 190)
     line_color = (30, 30, 30)
     pygame.draw.rect(surface, bg, rect, border_radius=8)
-    # draw three horizontal lines for a cleaner 'menu' icon
+    # menu icoon ingame
     cx, cy = rect.center
     line_w = int(rect.width * 0.45)
     spacing = 6
@@ -1037,7 +1036,6 @@ class Heart:
     )
 
 async def main():
-    # audio may be unavailable in browser (pygbag). Fall back to dummy sounds.
     audio_available = True
     class DummySound:
         def play(self, *a, **k):
@@ -1090,7 +1088,6 @@ async def main():
     snowflakes = [Snowflake() for _ in range(100)]
     snow_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
     # Lees highscore bij start
-# Lees highscore bij start
     try:
         with open("highscore.txt", "r") as f:
             parts = f.read().split(",")
@@ -1104,13 +1101,10 @@ async def main():
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
             overlay_rect = overlay.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 - 50))
-            # Draw and keep pumping events while waiting so browser stays responsive
             end_time = asyncio.get_event_loop().time() + duration * 0.35
             while asyncio.get_event_loop().time() < end_time:
-                # redraw overlay so the browser doesn't consider the page unresponsive
                 screen.blit(overlay, overlay_rect)
                 pygame.display.flip()
-                # process events to keep browser/SDL responsive
                 for ev in pygame.event.get():
                     if ev.type == pygame.QUIT:
                         remove_highscore_file()
@@ -1171,7 +1165,8 @@ async def main():
                             if audio_available:
                                 pygame.mixer.music.unpause()
                             music_on = True
-                    if menu_button_rect.collidepoint(event.pos):
+                    # Klik op de kleine rechtsboven menu-knop of de centrale MAIN MENU-knop
+                    if menu_button_rect.collidepoint(event.pos) or main_menu_button_rect().collidepoint(event.pos):
                         if audio_available:
                             pygame.mixer.music.stop()
                         return 'menu'
@@ -1303,7 +1298,7 @@ async def main():
                             invincible = player.punch(invincible)
                         text = False
                         game_start = True
-                        # start alive timer on first space press
+                        # start timer na eerste keer spatiebalk drukken
                         if player.alive_start is None:
                             player.alive_start = time.time()
                         if enemies == list():
@@ -1456,7 +1451,7 @@ async def main():
 
             txt = font.render("RESTART", True, (0,0,0))
             screen.blit(txt, txt.get_rect(center=btn.center))
-            # MAIN MENU button under restart
+            # MAIN MENU button onder restart
             main_btn = main_menu_button_rect()
             pygame.draw.rect(screen, (180, 180, 180), main_btn, border_radius=8)
             main_txt = font.render("MAIN MENU", True, (0,0,0))
@@ -1469,7 +1464,7 @@ async def main():
             screen.blit(overlay, (0,0))
             flash_timer -= 1
 
-        # draw menu button (with hover) and music button
+        # teken menu en music button
         mpos = pygame.mouse.get_pos()
         hover = menu_button_rect.collidepoint(mpos)
         draw_menu_button(screen, menu_button_rect, hover=hover)
@@ -1494,19 +1489,12 @@ async def run_app():
         start = await main_menu()
         if not start:
             break
-        # Enter game loop; `main()` may return control flags:
-        #  - 'restart' : restart game immediately
-        #  - 'menu'    : return to main menu
-        #  - None/other: exit to menu
         while True:
             result = await main()
             if result == 'restart':
-                # restart the game without showing main menu
                 continue
             if result == 'menu':
-                # go back to main menu
                 break
-            # any other result -> go back to main menu
             break
 
 if __name__ == "__main__":
