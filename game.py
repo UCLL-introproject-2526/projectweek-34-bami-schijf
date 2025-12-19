@@ -841,17 +841,18 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
-        mini_x = x + int(npc.world_x * scale_x)
-        mini_y = y + int(npc.world_y * scale_y)
+        if npc.hostile:
+            mini_x = x + int(npc.world_x * scale_x)
+            mini_y = y + int(npc.world_y * scale_y)
 
-        if isinstance(npc, Boss):
-            radius = 6  # groter voor Boss
-            color = (0, 0, 255)  # blauw
-        else:
-            radius = 3  # normale vijanden
-            color = (0, 200, 0)  # groen
+            if isinstance(npc, Boss):
+                radius = 6  # groter voor Boss
+                color = (0, 0, 255)  # blauw
+            else:
+                radius = 3  # normale vijanden
+                color = (0, 200, 0)  # groen
 
-        pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
+            pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
 
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
