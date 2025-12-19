@@ -219,11 +219,10 @@ class Player:
     def draw_shadow(self, screen):
         shadow_width = self.width * 0.8
         shadow_height = self.height * 0.25
-        # schaduw centreren
         shadow_x = self.screen_x + (self.width - shadow_width) / 2
         shadow_y = self.screen_y + self.height - shadow_height * 0.6
 
-        # zwarte ellpis met transparantie (schaduw zelf)
+
         shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
         pygame.draw.ellipse(shadow, (0, 0, 0, 100), shadow.get_rect())  # 100 = alpha
         screen.blit(shadow, (shadow_x, shadow_y))
@@ -1473,7 +1472,7 @@ async def main():
             main_txt = font.render("MAIN MENU", True, (0,0,0))
             screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
 
-        if flash_timer > 0:
+        if flash_timer > 0 and stunned:
             overlay = pygame.Surface(screen_size)
             overlay.set_alpha(100)
             overlay.fill((255,0,0))
