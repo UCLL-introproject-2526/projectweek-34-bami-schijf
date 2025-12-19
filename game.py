@@ -829,22 +829,31 @@ MINIMAP_UPDATE_INTERVAL = 8
 minimap_timer = 0
 
 def draw_minimap(screen, player: Player, npcs: list, hearts: list):
+    # linkeronderhoek van de map
     x = MINIMAP_PADDING
     y = screen_size[1] - MINIMAP_SIZE[1] - MINIMAP_PADDING
 
+    # rechthoek van minimap (positie + grootte)
     minimap_rect = pygame.Rect(x, y, MINIMAP_SIZE[0], MINIMAP_SIZE[1])
+    # achtergrond van minimap tekenen
     pygame.draw.rect(screen, MINIMAP_BG_COLOR, minimap_rect, border_radius=4)
+    # rand rond de minimap tekenen
     pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, minimap_rect, 2, border_radius=4)
     screen.blit(MINIMAP_BG, (x, y))
 
+    # schaalfactor: wereld -> minimap
     scale_x = MINIMAP_SIZE[0] / background_width
     scale_y = MINIMAP_SIZE[1] / background_height
 
+    # alle npc's (enemies) op de minimap tekenen
     for npc in npcs:
+        # enkel 'vijandige' npcs tonen (invis niet tonen)
         if npc.hostile:
+            # wereldpositie omzetten naar minimap-positie
             mini_x = x + int(npc.world_x * scale_x)
             mini_y = y + int(npc.world_y * scale_y)
 
+            # boss onderscheiden van gewone enemies
             if isinstance(npc, Boss):
                 radius = 6  # groter voor Boss
                 color = (0, 0, 255)  # blauw
@@ -854,9 +863,11 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
 
             pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
 
+    # hearts op de minimap tekenen
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
         mini_y = y + int(heart.world_y * scale_y)
+        # hearts zijn rood en klein
         pygame.draw.circle(screen, (255, 0, 0), (mini_x, mini_y), 3)
 
     # speler positie
