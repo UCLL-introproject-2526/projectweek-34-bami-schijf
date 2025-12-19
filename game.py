@@ -42,8 +42,8 @@ background_image = pygame.image.load("background/background-map 2 (snow).png").c
 background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
-# allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+# allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -679,7 +679,7 @@ def draw_boss_hp(screen, enemies):
     text = font.render(f"BOSS HP: {boss.health}", True, (255, 255, 255))
 
     padding = 8
-    bg_rect = text.get_rect(topleft=(18, 237))  # onder highscore
+    bg_rect = text.get_rect(topleft=(18, 233))  # onder highscore
     bg_rect.inflate_ip(padding * 2, padding * 2)
 
     pygame.draw.rect(screen, (55, 55, 55), bg_rect, border_radius=6)
