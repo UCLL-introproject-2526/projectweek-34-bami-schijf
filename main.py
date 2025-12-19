@@ -3,7 +3,7 @@ import time
 import sys
 import os
 from pygame.display import flip
-from random import randint, choice, uniform
+from random import randint, choice, uniform, random
 import math
 import asyncio
 
@@ -408,7 +408,8 @@ class Npc:
         self.shrink_width = 22.5
         self.shrink_height = 45
         self.hostile = True
-        self.inv = False   
+        self.inv = False
+        self.isFruit = False
 
     def draw(self, screen):
         if self.hostile:
@@ -589,6 +590,7 @@ class Fruit(Npc):
         self.width = 70
         self.shrink_width = 5
         self.shrink_height = 10
+        self.isFruit = True
         if FRUIT_RAW:
             src = choice(FRUIT_RAW)
             self.image = pygame.transform.scale(src, (self.width, self.height))
@@ -1390,6 +1392,9 @@ async def main():
                         tick_sound.play()
                 if npc.health <= 0:
                         if npc in enemies: 
+                            if npc.isFruit and random() < 0.15:
+                                player.regen_hp(1)
+                                
                             enemies.remove(npc)
                             kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)
                     
