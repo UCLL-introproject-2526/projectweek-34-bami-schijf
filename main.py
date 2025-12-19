@@ -172,8 +172,7 @@ class Player:
         self.sword_width = 130
         self.sword_height = 90
 
-        self.sword_image = pygame.transform.scale(self.sword_image, (self.sword_width, self.sword_height)
-)
+        self.sword_image = pygame.transform.scale(self.sword_image, (self.sword_width, self.sword_height))
 
 
         self.image = self.sprites["right"] # start sprite
@@ -1473,7 +1472,7 @@ async def main():
             main_txt = font.render("MAIN MENU", True, (0,0,0))
             screen.blit(main_txt, main_txt.get_rect(center=main_btn.center))
 
-        if flash_timer > 0 and stunned:
+        if flash_timer > 0:
             overlay = pygame.Surface(screen_size)
             overlay.set_alpha(100)
             overlay.fill((255,0,0))
