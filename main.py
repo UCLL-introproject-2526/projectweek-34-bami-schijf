@@ -5,6 +5,7 @@ import os
 from pygame.display import flip
 from random import randint, choice, uniform
 import math
+import asyncio
 
 MINIMAP_SIZE = (200, 150)  # breedte, hoogte van de minimap
 MINIMAP_PADDING = 20        # afstand van schermrand
@@ -48,6 +49,53 @@ enemies = []
 punchitbox = None
 global cangonextwave 
 cangonextwave = True
+
+# Preload veelgebruikte afbeeldingen om schijf-I/O tijdens gameplay te vermijden (voorkomt vastlopen)
+LABUBU_PATHS = [
+    "sprites/Labubu - sprite/Labubu -  pink.png",
+    "sprites/Labubu - sprite/Labubu - dark blue.png",
+    "sprites/Labubu - sprite/Labubu - gold.png",
+    "sprites/Labubu - sprite/Labubu - green.png",
+    "sprites/Labubu - sprite/Labubu - light blue.png",
+    "sprites/Labubu - sprite/Labubu - orange.png",
+    "sprites/Labubu - sprite/Labubu - purple.png",
+]
+FRUIT_PATHS = [
+    "sprites/Fruit - sprite/Apple.png",
+    "sprites/Fruit - sprite/Banana.png",
+    "sprites/Fruit - sprite/Cherry.png",
+    "sprites/Fruit - sprite/Orange.png",
+]
+try:
+    LABUBU_RAW = [pygame.image.load(p).convert_alpha() for p in LABUBU_PATHS]
+except Exception:
+    LABUBU_RAW = []
+try:
+    FRUIT_RAW = [pygame.image.load(p).convert_alpha() for p in FRUIT_PATHS]
+except Exception:
+    FRUIT_RAW = []
+try:
+    ZOMBIE_RAW = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
+except Exception:
+    ZOMBIE_RAW = None
+try:
+    BOSS_RAW = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
+except Exception:
+    BOSS_RAW = None
+
+# projectile assets
+try:
+    PEN_RAW = pygame.image.load("sprites/Projectile - sprite/pen.png").convert_alpha()
+except Exception:
+    PEN_RAW = None
+try:
+    PINE_RAW = pygame.image.load("sprites/Projectile - sprite/pineapple.png").convert_alpha()
+except Exception:
+    PINE_RAW = None
+try:
+    SHRAP_RAW = pygame.image.load("sprites/Projectile - sprite/shrapnel.png").convert_alpha()
+except Exception:
+    SHRAP_RAW = None
 
 def distanceSquared(dx: int, dy:int):
     return dx**2 + dy**2
@@ -399,8 +447,12 @@ class Projectile():
         self.height = 100
         self.dir = getDir((self.world_x + player.width // 2, self.world_y + self.height // 2), (enemy.world_x + enemy.width // 2, enemy.world_y + enemy.height // 2))
         print(self.dir)
-        self.image = pygame.image.load("sprites\Projectile - sprite/pen.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        # gebruik vooraf geladen `PEN_RAW` als beschikbaar
+        if PEN_RAW:
+            self.image = pygame.transform.scale(PEN_RAW, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (255,255,0), (self.width//2, self.height//2), min(self.width,self.height)//2)
 
         self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0])) + 90
         self.image = pygame.transform.rotate(self.image,self.angle)
@@ -446,8 +498,11 @@ class Pineapple(Projectile):
         super().__init__(player, enemy)
         self.isPen = False
         self.isPineapple = True
-        self.image = pygame.image.load("sprites\Projectile - sprite/pineapple.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if PINE_RAW:
+            self.image = pygame.transform.scale(PINE_RAW, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (255,165,0), (self.width//2, self.height//2), min(self.width,self.height)//2)
 
         self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0])) + 90
         self.image = pygame.transform.rotate(self.image,self.angle)
@@ -467,8 +522,11 @@ class Shrapnel(Projectile):
         self.width = 5
         self.height = 5
         self.speed = 10
-        self.image = pygame.image.load("sprites\Projectile - sprite/shrapnel.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if SHRAP_RAW:
+            self.image = pygame.transform.scale(SHRAP_RAW, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.rect(self.image, (200,200,200), self.image.get_rect())
         self.isPen = False
         self.isPineapple = False
         self.isShrapnel = True
@@ -485,15 +543,13 @@ class Labubu(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 4
-        self.sprites = ("sprites\Labubu - sprite\Labubu -  pink.png",
-                        "sprites/Labubu - sprite/Labubu - dark blue.png",
-                        "sprites/Labubu - sprite/Labubu - gold.png",
-                        "sprites/Labubu - sprite/Labubu - green.png",
-                        "sprites/Labubu - sprite/Labubu - light blue.png",
-                        "sprites/Labubu - sprite/Labubu - orange.png",
-                        "sprites\Labubu - sprite\Labubu - purple.png")
-        self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        # gebruik vooraf geladen Labubu-afbeeldingen
+        if LABUBU_RAW:
+            src = choice(LABUBU_RAW)
+            self.image = pygame.transform.scale(src, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.ellipse(self.image, (255,192,203), self.image.get_rect())
         self.shrink_width = 30
         self.shrink_height = 40
         self.health = 305
@@ -503,8 +559,11 @@ class Zombie(Npc):
     def __init__(self):
         super().__init__()
         self.speed = 2.5
-        self.image = pygame.image.load("sprites/Zombie - sprite/zombie.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if ZOMBIE_RAW:
+            self.image = pygame.transform.scale(ZOMBIE_RAW, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.rect(self.image, (0,128,0), self.image.get_rect())
         self.shrink_width = 30
         self.shrink_height = 40
         self.health = 55
@@ -519,12 +578,12 @@ class Fruit(Npc):
         self.width = 70
         self.shrink_width = 5
         self.shrink_height = 10
-        self.sprites = ("sprites\Fruit - sprite\Apple.png",
-                        "sprites\Fruit - sprite\Banana.png",
-                        "sprites\Fruit - sprite\Cherry.png",
-                        "sprites\Fruit - sprite\Orange.png")
-        self.image = pygame.image.load(choice(self.sprites)).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if FRUIT_RAW:
+            src = choice(FRUIT_RAW)
+            self.image = pygame.transform.scale(src, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (255,0,0), (self.width//2, self.height//2), min(self.width,self.height)//2)
 
 class Boss(Npc):
     def __init__(self):
@@ -533,8 +592,11 @@ class Boss(Npc):
         self.height = 200
         self.world_x = background_width // 2 - self.width
         self.world_y = background_height // 8
-        self.image = pygame.image.load("sprites/Labubu - sprite/Labubu - blue.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if BOSS_RAW:
+            self.image = pygame.transform.scale(BOSS_RAW, (self.width, self.height))
+        else:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.rect(self.image, (0,0,255), self.image.get_rect())
         self.shrink_width = 80
         self.shrink_height = 120
         self.health = 5000
@@ -738,7 +800,50 @@ def startnewave(currentwave, hearts):
     return enemies
 
 
-def main_menu():
+async def startnewave_async(currentwave, hearts, batch=10):
+    enemies = []
+    multi = 3
+    fruit,labubu,zombie,boss,invis_enemy = allenemywaves.get(currentwave,[randint(1,10)+currentwave * multi ,randint(1,10)+currentwave * multi ,randint(1,10)+currentwave * multi,currentwave-6 ,0])
+
+    # helper om vijanden incrementeel aan te maken om blokkering te vermijden
+    def create(kind):
+        if kind == 'fruit':
+            return Fruit()
+        if kind == 'labubu':
+            return Labubu()
+        if kind == 'zombie':
+            return Zombie()
+        if kind == 'boss':
+            return Boss()
+        if kind == 'invis':
+            return invisEnemy()
+
+    counts = [('fruit', fruit), ('labubu', labubu), ('zombie', zombie), ('boss', boss), ('invis', invis_enemy)]
+    created = 0
+    for kind, cnt in counts:
+        for _ in range(cnt):
+            enemies.append(create(kind))
+            created += 1
+            if created % batch == 0:
+                    # verwerk events en geef controle terug zodat de browser niet bevriest
+                for ev in pygame.event.get():
+                    if ev.type == pygame.QUIT:
+                        remove_highscore_file()
+                        pygame.quit()
+                        sys.exit()
+                await asyncio.sleep(0)
+
+    margin = screen_size[0] // 2
+    # twee regen hartjes bij per wave
+    for _ in range(2):
+        x = randint(margin, background_width - margin - 32)
+        y = randint(margin, background_height - margin - 32)
+        hearts.append(Heart(x, y))
+
+    return enemies
+
+
+async def main_menu():
     menu_clock = pygame.time.Clock()
     btn_font = pygame.font.SysFont("arialblack", 36)
     play_rect = pygame.Rect(screen_size[0] // 2 - 100, screen_size[1] // 2 - 40, 200, 50)
@@ -802,7 +907,12 @@ def main_menu():
             screen.blit(txt, txt.get_rect(center=rect.center))
 
         pygame.display.flip()
-        menu_clock.tick(60)
+        # gebruik een korte async-vriendelijke sleep wanneer het in pygbag draait
+        try:
+            await asyncio.sleep(1/60)
+        except Exception:
+            # fallback voor synchrone uitvoering
+            menu_clock.tick(60)
 
 
 def draw_menu_button(surface, rect, hover=False):
@@ -926,17 +1036,31 @@ class Heart:
             self.height
     )
 
-def main():
-    pygame.mixer.init()
-    pygame.mixer.music.load('sounds/background.ogg')
-    pygame.mixer.music.play(-1, 0, 0)
-    pygame.mixer.music.set_volume(0.25)
-    dmg_sound = pygame.mixer.Sound('sounds/damage.ogg')
-    tick_sound = pygame.mixer.Sound('sounds/tick.ogg')
-    game_over = pygame.mixer.Sound("sounds/gameover.ogg")
-    regen_sound = pygame.mixer.Sound("sounds/regen.ogg")
-    global punch_sound
-    punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
+async def main():
+    # audio may be unavailable in browser (pygbag). Fall back to dummy sounds.
+    audio_available = True
+    class DummySound:
+        def play(self, *a, **k):
+            return None
+
+    try:
+        pygame.mixer.init()
+        pygame.mixer.music.load('sounds/background.ogg')
+        pygame.mixer.music.play(-1, 0, 0)
+        pygame.mixer.music.set_volume(0.25)
+        dmg_sound = pygame.mixer.Sound('sounds/damage.ogg')
+        tick_sound = pygame.mixer.Sound('sounds/tick.ogg')
+        game_over = pygame.mixer.Sound("sounds/gameover.ogg")
+        regen_sound = pygame.mixer.Sound('sounds/regen.ogg')
+        global punch_sound
+        punch_sound = pygame.mixer.Sound('sounds/punch.ogg')
+    except Exception:
+        audio_available = False
+        dmg_sound = DummySound()
+        tick_sound = DummySound()
+        game_over = DummySound()
+        regen_sound = DummySound()
+        punch_sound = DummySound()
 
     global highscore
     mute_img = pygame.image.load("background/mute.png").convert_alpha() #mute audio knop
@@ -960,7 +1084,7 @@ def main():
     hearts = []  # start lege lijst
     projectiles = []
     currentwave = 1
-    enemies = startnewave(currentwave, hearts)
+    enemies = await startnewave_async(currentwave, hearts)
     pen_time = 0
     pine_time = 0
     snowflakes = [Snowflake() for _ in range(100)]
@@ -976,13 +1100,23 @@ def main():
 
 
 
-    def show_wave_overlay(wave_number, duration=2):
+    async def show_wave_overlay(wave_number, duration=2):
         if 1 <= wave_number < len(wave_images):
             overlay = wave_images[wave_number]
             overlay_rect = overlay.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 - 50))
-            screen.blit(overlay, overlay_rect)
-            pygame.display.flip()
-            pygame.time.delay(int(duration * 350))
+            # Draw and keep pumping events while waiting so browser stays responsive
+            end_time = asyncio.get_event_loop().time() + duration * 0.35
+            while asyncio.get_event_loop().time() < end_time:
+                # redraw overlay so the browser doesn't consider the page unresponsive
+                screen.blit(overlay, overlay_rect)
+                pygame.display.flip()
+                # process events to keep browser/SDL responsive
+                for ev in pygame.event.get():
+                    if ev.type == pygame.QUIT:
+                        remove_highscore_file()
+                        pygame.quit()
+                        sys.exit()
+                await asyncio.sleep(0.016)
 
     running = True
     paused = False
@@ -1030,14 +1164,17 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if music_button_rect.collidepoint(event.pos):
                         if music_on:
-                            pygame.mixer.music.pause()
+                            if audio_available:
+                                pygame.mixer.music.pause()
                             music_on = False
                         else:
-                            pygame.mixer.music.unpause()
+                            if audio_available:
+                                pygame.mixer.music.unpause()
                             music_on = True
                     if menu_button_rect.collidepoint(event.pos):
-                        pygame.mixer.music.stop()
-                        return
+                        if audio_available:
+                            pygame.mixer.music.stop()
+                        return 'menu'
                 elif event.type == pygame.KEYDOWN:
                     # escape wordt gebruikt om pauze op te heffen
                     if event.key == pygame.K_ESCAPE:
@@ -1053,9 +1190,9 @@ def main():
 
         held = pygame.key.get_pressed()
         if held[pygame.K_RIGHT] or held[pygame.K_d]: player_dx = player.speed
-        if held[pygame.K_LEFT] or held[pygame.K_q]: player_dx = -player.speed
+        if held[pygame.K_LEFT] or held[pygame.K_q] or held[pygame.K_a]: player_dx = -player.speed
         if held[pygame.K_DOWN] or held[pygame.K_s]: player_dy = player.speed
-        if held[pygame.K_UP] or held[pygame.K_z]: player_dy = -player.speed
+        if held[pygame.K_UP] or held[pygame.K_z] or held[pygame.K_w]: player_dy = -player.speed
 
 
 
@@ -1063,10 +1200,10 @@ def main():
             print("NEW WAVE STARTING")
             # toon overlay van de nieuwe wave
             next_wave_number = currentwave + 1
-            show_wave_overlay(next_wave_number)
+            await show_wave_overlay(next_wave_number)
 
             currentwave += 1
-            enemies = startnewave(currentwave, hearts)
+            enemies = await startnewave_async(currentwave, hearts)
             if currentwave == 2:
                 player.add_weapon("pen")
             elif currentwave == 3:
@@ -1119,19 +1256,23 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if music_button_rect.collidepoint(event.pos):
                     if music_on:
-                        pygame.mixer.music.pause()
+                        if audio_available:
+                            pygame.mixer.music.pause()
                         music_on = False
                     else:
-                        pygame.mixer.music.unpause()
+                        if audio_available:
+                            pygame.mixer.music.unpause()
                         music_on = True
                 if menu_button_rect.collidepoint(event.pos):
-                    pygame.mixer.music.stop()
+                    if audio_available:
+                        pygame.mixer.music.stop()
                     return
                 if main_menu_button_rect().collidepoint(event.pos):
-                    pygame.mixer.music.stop()
-                    return
+                    if audio_available:
+                        pygame.mixer.music.stop()
+                    return 'menu'
                 if restart_button_rect().collidepoint(event.pos):
-                    return main()
+                    return 'restart'
                 if continue_button_rect().collidepoint(event.pos):
                     if player.get_hp() > 0:
                         print("CONTINUE ON ")
@@ -1155,7 +1296,7 @@ def main():
                 if player.get_hp() > 0:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         player.look_right()
-                    if event.key == pygame.K_LEFT or event.key == pygame.K_q:
+                    if event.key == pygame.K_LEFT or event.key == pygame.K_q or event.key == pygame.K_a:
                         player.look_left()
                     if event.key == pygame.K_SPACE or event.key == pygame.K_LSHIFT:
                         if stunned == False:
@@ -1171,26 +1312,28 @@ def main():
         if not stunned and player.get_hp() > 0:
             held = pygame.key.get_pressed()
             player.is_moving = False
-            if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]):
+            if (held[pygame.K_UP] and held[pygame.K_RIGHT]) or (held[pygame.K_UP] and held[pygame.K_LEFT]) or (held[pygame.K_DOWN] and held[pygame.K_RIGHT]) or (held[pygame.K_DOWN] and held[pygame.K_LEFT]) \
+               or (held[pygame.K_z] and held[pygame.K_d]) or (held[pygame.K_z] and held[pygame.K_q]) or (held[pygame.K_s] and held[pygame.K_d]) or (held[pygame.K_s] and held[pygame.K_q]) \
+               or (held[pygame.K_w] and held[pygame.K_d]) or (held[pygame.K_w] and held[pygame.K_a]) or (held[pygame.K_s] and held[pygame.K_a]) or (held[pygame.K_s] and held[pygame.K_d]):
                 player.speed = player.base_speed / (2**(1/2))
             else:
                 player.speed = player.base_speed
-            if held[pygame.K_UP] or held[pygame.K_z]:
+            if held[pygame.K_UP] or held[pygame.K_z] or held[pygame.K_w]:
                 player.up()
             if held[pygame.K_DOWN] or held[pygame.K_s]:
                 player.down()
-            if held[pygame.K_LEFT] or held[pygame.K_q]:
+            if held[pygame.K_LEFT] or held[pygame.K_q] or held[pygame.K_a]:
                 player.left()
             if held[pygame.K_RIGHT] or held[pygame.K_d]:
                 player.right()
 
-            if held[pygame.K_UP] or held[pygame.K_z]:
+            if held[pygame.K_UP] or held[pygame.K_z] or held[pygame.K_w]:
                 player.up()
                 player.is_moving = True
             if held[pygame.K_DOWN] or held[pygame.K_s]:
                 player.down()
                 player.is_moving = True
-            if held[pygame.K_LEFT] or held[pygame.K_q]:
+            if held[pygame.K_LEFT] or held[pygame.K_q] or held[pygame.K_a]:
                 player.left()
                 player.is_moving = True
             if held[pygame.K_RIGHT] or held[pygame.K_d]:
@@ -1273,7 +1416,8 @@ def main():
 
                     if player.get_hp() <= 0 and foo:
                         text = end_game()
-                        pygame.mixer.music.stop()
+                        if audio_available:
+                            pygame.mixer.music.stop()
                         game_over.play()
                         foo = not foo
             
@@ -1343,12 +1487,30 @@ def main():
         screen.blit(snow_surface, (0, 0)) # teken sneeuw op transparante sneeuwlaag
 
         flip()
+        await asyncio.sleep(0)
+
+async def run_app():
+    while True:
+        start = await main_menu()
+        if not start:
+            break
+        # Enter game loop; `main()` may return control flags:
+        #  - 'restart' : restart game immediately
+        #  - 'menu'    : return to main menu
+        #  - None/other: exit to menu
+        while True:
+            result = await main()
+            if result == 'restart':
+                # restart the game without showing main menu
+                continue
+            if result == 'menu':
+                # go back to main menu
+                break
+            # any other result -> go back to main menu
+            break
 
 if __name__ == "__main__":
-    while True:
-        start = main_menu()
-        if start:
-            main()
-        else:
-            break
-    pygame.quit()
+    try:
+        asyncio.run(run_app())
+    finally:
+        pygame.quit()
