@@ -44,7 +44,7 @@ background_width, background_height = background_image.get_size()
 scroll_x, scroll_y = 0, 0 # scroll offsets om camera te volgen
 
 allenemywaves = {1: [0,0,10,0,0],2: [0,5,10,0,0],3: [5,10,15,0,0],4: [10,15,20,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
-#allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
+# allenemywaves = {1: [0,0,1,0,0],2: [0,1,0,0,0],3: [1,0,1,0,0],4: [0,0,0,1,0], 5:[0,0,0,0,1]} # [fruit,labubu,zombie,boss, invisEnemy]
 enemies = []
 punchitbox = None
 global cangonextwave 
@@ -184,10 +184,11 @@ class Player:
         min = math.inf
         nearest = None
         for enemy in enemies:
-            temp = distanceSquared(self.world_x - enemy.world_x, self.world_y - enemy.world_y)
-            if temp < min:
-                min = temp
-                nearest = enemy
+            if enemy.hostile:
+                temp = distanceSquared(self.world_x - enemy.world_x, self.world_y - enemy.world_y)
+                if temp < min:
+                    min = temp
+                    nearest = enemy
         return nearest
 
     def draw(self, screen):
@@ -726,7 +727,25 @@ def draw_highscore_left(screen, highscore):
     screen.blit(line2, (bg_rect.x + 8, bg_rect.y + 8 + line1.get_height()))
 
 
+def draw_boss_hp(screen, enemies):
+    # zoek levende boss
+    boss = None
+    for e in enemies:
+        if isinstance(e, Boss):
+            boss = e
+            break
 
+    if boss is None:
+        return  # geen boss → niets tekenen
+
+    text = font.render(f"BOSS HP: {boss.health}", True, (255, 255, 255))
+
+    padding = 8
+    bg_rect = text.get_rect(topleft=(18, 233))  # onder highscore
+    bg_rect.inflate_ip(padding * 2, padding * 2)
+
+    pygame.draw.rect(screen, (55, 55, 55), bg_rect, border_radius=6)
+    screen.blit(text, text.get_rect(center=bg_rect.center))
 
 
 def end_game():
@@ -932,17 +951,18 @@ def draw_minimap(screen, player: Player, npcs: list, hearts: list):
     scale_y = MINIMAP_SIZE[1] / background_height
 
     for npc in npcs:
-        mini_x = x + int(npc.world_x * scale_x)
-        mini_y = y + int(npc.world_y * scale_y)
+        if npc.hostile:
+            mini_x = x + int(npc.world_x * scale_x)
+            mini_y = y + int(npc.world_y * scale_y)
 
-        if isinstance(npc, Boss):
-            radius = 6  # groter voor Boss
-            color = (0, 0, 255)  # blauw
-        else:
-            radius = 3  # normale vijanden
-            color = (0, 200, 0)  # groen
+            if isinstance(npc, Boss):
+                radius = 6  # groter voor Boss
+                color = (0, 0, 255)  # blauw
+            else:
+                radius = 3  # normale vijanden
+                color = (0, 200, 0)  # groen
 
-        pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
+            pygame.draw.circle(screen, color, (mini_x, mini_y), radius)
 
     for heart in hearts:
         mini_x = x + int(heart.world_x * scale_x)
@@ -1106,6 +1126,7 @@ async def main():
             draw_highscore_left(screen, highscore) # toon highscore
             draw_timer(screen, player, currentwave, paused, pause_start_time) # toon timer (! stop tijdens pauze)
             draw_minimap(screen, player, enemies, hearts) # toon minimap
+            draw_boss_hp(screen, enemies)
 
             # Teken mute-knop ook tijdens pauze + menu knop
             mpos = pygame.mouse.get_pos()
@@ -1408,6 +1429,8 @@ async def main():
         draw_timer(screen, player, currentwave)
         draw_minimap(screen, player, enemies, hearts)
         draw_highscore_left(screen, highscore) # toon highscore
+        draw_boss_hp(screen, enemies)
+
 
         if player.get_hp() <= 0 or currentwave == 5:
             if currentwave == 5 and player.get_hp() > 0:
