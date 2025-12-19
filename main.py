@@ -122,6 +122,8 @@ class Player:
         # World position tracks where the player is in the game world
         self.world_x = background_width // 2 - self.width //2
         self.world_y = background_height // 2 - self.height // 2
+        self.sword_x = self.screen_x + self.width
+        self.sword_y = self.screen_y - 5
 
         global scroll_x, scroll_y
         scroll_x = max(0, min(self.world_x - screen_size[0] // 2, background_width - screen_size[0]))
@@ -352,6 +354,15 @@ class Player:
     def get_rect(self):
         return pygame.Rect(self.screen_x, self.screen_y, self.width, self.height)
     
+    def get_rect_sword(self):
+        if not self.has_weapon("PPAP"):
+            return pygame.Rect(0, 0, 0, 0)
+        # self.sword coords aangepast in draw()
+        world_x = self.sword_x + scroll_x
+        world_y = self.sword_y + scroll_y
+
+        return pygame.Rect(world_x, world_y, self.sword_width, self.sword_height)
+
     def get_world_rect(self):
         return pygame.Rect(self.world_x, self.world_y, self.width, self.height)
 
@@ -1388,7 +1399,7 @@ async def main():
                             kills_this_wave = min(kills_this_wave + 1, total_enemies_in_wave)
                     
             if player.punching or not invincible:
-                if player_rect.colliderect(npc_rect) and player.get_hp() > 0:
+                if (player_rect.colliderect(npc_rect) or player.get_rect_sword().colliderect(npc_rect)) and player.get_hp() > 0:
 
                     if player.punching:
                         if not npc.inv:
