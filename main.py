@@ -219,10 +219,11 @@ class Player:
     def draw_shadow(self, screen):
         shadow_width = self.width * 0.8
         shadow_height = self.height * 0.25
+        # schaduw centreren
         shadow_x = self.screen_x + (self.width - shadow_width) / 2
         shadow_y = self.screen_y + self.height - shadow_height * 0.6
 
-
+        # zwarte ellpis met transparantie (schaduw zelf)
         shadow = pygame.Surface((shadow_width, shadow_height), pygame.SRCALPHA)
         pygame.draw.ellipse(shadow, (0, 0, 0, 100), shadow.get_rect())  # 100 = alpha
         screen.blit(shadow, (shadow_x, shadow_y))
