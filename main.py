@@ -1401,7 +1401,7 @@ async def main():
                             if not player.has_weapon("PPAP"):
                                 npc.takedamage(50)  # punch damage
                             else:
-                                npc.takedamage(100)  # ppap damages
+                                npc.takedamage(150)  # ppap damages
 
                             npc.inv = 30
                             dmg_sound.play()
